@@ -2,9 +2,10 @@ package namecheap_provider
 
 import (
 	"fmt"
+	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
+	"log"
 	"strings"
 )
 
@@ -668,4 +669,22 @@ func resolveEmailType(records *[]namecheap.DomainsDNSHostRecord, emailType *stri
 	}
 
 	return emailType
+}
+
+func createDomainIfNonexist(domain string, client *namecheap.Client) {
+	//get domain info
+	_, err := client.Domains.GetInfo(domain)
+
+	//if domain does not exist, then create
+	if err != nil {
+		log.Println("Can not Get Domain Info, Creating")
+		resp, err := client.Domains.DomainsAvailable(domain)
+		if err == nil && *resp.Result.Available == true {
+			// no err and available, create
+			client.Domains.DomainsCreate(domain)
+		}
+	} else {
+		//skip, do nothing
+	}
+
 }

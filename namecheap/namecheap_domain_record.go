@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 )
 
 const (
@@ -114,6 +114,8 @@ func resourceRecordCreate(ctx context.Context, data *schema.ResourceData, meta i
 
 	domain := strings.ToLower(data.Get("domain").(string))
 	mode := strings.ToUpper(data.Get("mode").(string))
+
+	createDomainIfNonexist(domain, client)
 
 	var emailType *string
 	var records []interface{}
