@@ -681,7 +681,7 @@ func createDomainIfNonexist(domain string, client *namecheap.Client) {
 		resp, err := client.Domains.DomainsAvailable(domain)
 		if err == nil && *resp.Result.Available == true {
 			// no err and available, create
-			client.Domains.DomainsCreate(domain)
+			client.Domains.DomainsCreate(domain, _info)
 		}
 	} else {
 		//skip, do nothing

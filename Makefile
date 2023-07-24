@@ -1,12 +1,16 @@
 NAME=namecheap
-BINARY=terraform-provider-${NAME}
-VERSION=2.0.0
+
+VERSION=2.2.0
+
+COMMIT := $(shell git rev-parse --short HEAD)
 
 ARCH := $(shell go env GOARCH)
 
 OS := $(shell go env GOOS)
 
 OS_ARCH=darwin_arm64
+
+BINARY := "terraform-provider-namecheap_v$(VERSION)"
 
 format:
 	go fmt ./...

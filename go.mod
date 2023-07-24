@@ -1,7 +1,7 @@
-module github.com/namecheap/terraform-provider-namecheap
+module terraform-provider-st-namecheap
 
 require (
-	github.com/agent-tao/go-namecheap-sdk/v2 v2.0.0-20230721024120-a35b7204d7b5
+	github.com/agent-tao/go-namecheap-sdk/v2 v2.0.0-20230721064639-e70c74c9d191
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.1
 	github.com/stretchr/testify v1.7.0
