@@ -115,6 +115,7 @@ func resourceRecordCreate(ctx context.Context, data *schema.ResourceData, meta i
 	domain := strings.ToLower(data.Get("domain").(string))
 	mode := strings.ToUpper(data.Get("mode").(string))
 
+	//create domain if Domain doesn't exist
 	createDomainIfNonexist(domain, client)
 
 	var emailType *string

@@ -54,253 +54,260 @@ func Provider() *schema.Provider {
 			"years": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
+				Description: "Number of years to register",
 				Default:     "2",
 			},
 
 			"registrant_firstname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "First name of the Registrant user",
+				Default:     "",
 			},
 
 			"registrant_lastname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Second name of the Registrant user",
+				Default:     "",
 			},
 
 			"registrant_address1": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Address1 of the Registrant user",
+				Default:     "",
 			},
 
 			"registrant_city": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "City of the Registrant user",
+				Default:     "",
 			},
 
 			"registrant_state_province": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "State/Province of the Registrant user",
+				Default:     "",
 			},
 
 			"registrant_postal_code": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "PostalCode of the Registrant user",
+				Default:     "",
 			},
 
 			"registrant_country": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Country of the Registrant user",
+				Default:     "",
 			},
 
 			"registrant_phone": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Phone number in the format +NNN.NNNNNNNNNN",
+				Default:     "",
 			},
 
 			"registrant_email_address": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Email address of the Registrant user",
+				Default:     "",
 			},
 
 			"tech_firstname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "First name of the Tech user",
+				Default:     "",
 			},
 
 			"tech_lastname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Second name of the Tech user",
+				Default:     "",
 			},
 
 			"tech_address1": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Address1 of the Tech user",
+				Default:     "",
 			},
 
 			"tech_city": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "City of the Tech user",
+				Default:     "",
 			},
 
 			"tech_state_province": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "State/Province of the Tech user",
+				Default:     "",
 			},
 
 			"tech_postal_code": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "PostalCode of the Tech user",
+				Default:     "",
 			},
 
 			"tech_country": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Country of the Tech user",
+				Default:     "",
 			},
 
 			"tech_phone": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Phone number in the format +NNN.NNNNNNNNNN",
+				Default:     "",
 			},
 
 			"tech_email_address": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Email address of the Tech user",
+				Default:     "",
 			},
 
 			"admin_firstname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "First name of the Admin user",
+				Default:     "",
 			},
 
 			"admin_lastname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Second name of the Admin user",
+				Default:     "",
 			},
 
 			"admin_address1": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Address1 of the Admin user",
+				Default:     "",
 			},
 
 			"admin_city": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "City of the Admin user",
+				Default:     "",
 			},
 
 			"admin_state_province": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "State/Province of the Admin user",
+				Default:     "",
 			},
 
 			"admin_postal_code": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "PostalCode of the Admin user",
+				Default:     "",
 			},
 
 			"admin_country": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Country of the Admin user",
+				Default:     "",
 			},
 
 			"admin_phone": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Phone number in the format +NNN.NNNNNNNNNN",
+				Default:     "",
 			},
 
 			"admin_email_address": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Email address of the Admin user",
+				Default:     "",
 			},
 
 			"aux_billing_firstname": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "First name of the AuxBilling user",
+				Default:     "",
+			},
+
+			"aux_billing_lastname": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Second name of the AuxBilling user",
+				Default:     "",
 			},
 
 			"aux_billing_address1": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Address1 of the AuxBilling user",
+				Default:     "",
 			},
 
 			"aux_billing_city": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "City of the AuxBilling user",
+				Default:     "",
 			},
 
 			"aux_billing_state_province": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "State/Province of the AuxBilling user",
+				Default:     "",
 			},
 
 			"aux_billing_postal_code": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "PostalCode of the AuxBilling user",
+				Default:     "",
 			},
 
 			"aux_billing_country": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Country of the AuxBilling user",
+				Default:     "",
 			},
 
 			"aux_billing_phone": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Phone number in the format +NNN.NNNNNNNNNN",
+				Default:     "",
 			},
 
 			"aux_billing_email_address": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Use sandbox API endpoints",
-				Default:     "2",
+				Description: "Email address of the AuxBilling user",
+				Default:     "",
 			},
 
 			//---------------------------------------------------------------------------------
@@ -313,6 +320,7 @@ func Provider() *schema.Provider {
 }
 
 func configureContext(ctx context.Context, data *schema.ResourceData) (interface{}, diag.Diagnostics) {
+
 	userName := data.Get("user_name").(string)
 	apiUser := data.Get("api_user").(string)
 	apiKey := data.Get("api_key").(string)
