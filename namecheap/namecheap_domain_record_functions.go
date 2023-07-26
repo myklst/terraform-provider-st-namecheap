@@ -1,11 +1,12 @@
 package namecheap_provider
 
 import (
+	"context"
 	"fmt"
 	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
 	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"log"
 	"strings"
 )
 
@@ -671,20 +672,33 @@ func resolveEmailType(records *[]namecheap.DomainsDNSHostRecord, emailType *stri
 	return emailType
 }
 
-func createDomainIfNonexist(domain string, client *namecheap.Client) {
+func createDomainIfNonexist(ctx context.Context, domain string, client *namecheap.Client) diag.Diagnostics {
 	//get domain info
 	_, err := client.Domains.GetInfo(domain)
 
 	//if domain does not exist, then create
 	if err != nil {
-		log.Println("Can not Get Domain Info, Creating")
+		log(ctx, "Can not Get Domain Info:%s", domain)
+
+		//log.Println("Can not Get Domain Info, Creating:%s", domain)
 		resp, err := client.Domains.DomainsAvailable(domain)
 		if err == nil && *resp.Result.Available == true {
 			// no err and available, create
+			log(ctx, "Can not Get Domain Info, Creating %s", domain)
 			client.Domains.DomainsCreate(domain, _info)
+		} else {
+			log(ctx, "domain %s is not available, exiting!", domain)
+			return diag.Errorf("domain is not available to register, you need to change to another domain", domain)
 		}
 	} else {
 		//skip, do nothing
+		tflog.Info(ctx, "Domain %s exist, then do record config", domain)
 	}
+	return nil
 
+}
+
+func log(ctx context.Context, format string, a ...any) {
+	msg := fmt.Sprintf(format, a)
+	tflog.Info(ctx, msg)
 }
