@@ -685,7 +685,13 @@ func createDomainIfNonexist(ctx context.Context, domain string, client *namechea
 		if err == nil && *resp.Result.Available == true {
 			// no err and available, create
 			log(ctx, "Can not Get Domain Info, Creating %s", domain)
-			client.Domains.DomainsCreate(domain, _info)
+			_, err = client.Domains.DomainsCreate(domain, _info)
+
+			if err != nil {
+				log(ctx, "create domain %s failed, exit", domain)
+				return diag.Errorf("create domain failed", domain)
+			}
+
 		} else {
 			log(ctx, "domain %s is not available, exiting!", domain)
 			return diag.Errorf("domain is not available to register, you need to change to another domain", domain)
