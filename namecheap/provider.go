@@ -359,6 +359,7 @@ func configureContext(ctx context.Context, data *schema.ResourceData) (interface
 	_info.AdminEmailAddress = data.Get("admin_email_address").(string)
 
 	_info.AuxBillingFirstName = data.Get("aux_billing_firstname").(string)
+	_info.AuxBillingLastName = data.Get("aux_billing_lastname").(string)
 	_info.AuxBillingAddress1 = data.Get("aux_billing_address1").(string)
 	_info.AuxBillingCity = data.Get("aux_billing_city").(string)
 	_info.AuxBillingStateProvince = data.Get("aux_billing_state_province").(string)
