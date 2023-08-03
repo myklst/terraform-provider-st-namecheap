@@ -19,13 +19,7 @@ func resourceNamecheapDomainRecords() *schema.Resource {
 		DeleteContext: resourceRecordDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: func(ctx context.Context, data *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				if err := data.Set("domain", data.Id()); err != nil {
-					return nil, err
-				}
-
-				return []*schema.ResourceData{data}, nil
-			},
+			StateContext: resourceRecordImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -93,7 +87,18 @@ func resourceNamecheapDomainRecords() *schema.Resource {
 	}
 }
 
+func resourceRecordImport(ctx context.Context, data *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	log(ctx, "resourceRecordImport!!!!!!!!!!!!")
+	if err := data.Set("domain", data.Id()); err != nil {
+
+		return nil, err
+	}
+
+	return []*schema.ResourceData{data}, nil
+}
+
 func resourceRecordCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	log(ctx, "resourceRecordCreate!!!!!!!!!!!!")
 	client := meta.(*namecheap.Client)
 
 	domain := strings.ToLower(data.Get("domain").(string))
@@ -141,6 +146,9 @@ func resourceRecordCreate(ctx context.Context, data *schema.ResourceData, meta i
 }
 
 func resourceRecordRead(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
+
+	log(ctx, "resourceRecordRead!!!!!!!!!!!!")
+
 	client := meta.(*namecheap.Client)
 
 	domain := strings.ToLower(data.Get("domain").(string))
@@ -181,9 +189,11 @@ func resourceRecordRead(ctx context.Context, data *schema.ResourceData, meta int
 	} else {
 
 		realRecords, realEmailType, diags := readRecordsOverwrite(domain, records, client)
+
 		if diags.HasError() {
 			return diags
 		}
+
 		_ = data.Set("record", *realRecords)
 		if emailType != nil {
 			_ = data.Set("email_type", *realEmailType)
@@ -199,6 +209,9 @@ func resourceRecordRead(ctx context.Context, data *schema.ResourceData, meta int
 }
 
 func resourceRecordUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
+
+	log(ctx, "resourceRecordUpdate!!!!!!!!!!!!")
+
 	client := meta.(*namecheap.Client)
 
 	domain := strings.ToLower(data.Get("domain").(string))
@@ -280,6 +293,9 @@ func resourceRecordUpdate(ctx context.Context, data *schema.ResourceData, meta i
 }
 
 func resourceRecordDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
+
+	log(ctx, "resourceRecordDelete!!!!!!!!!!!!")
+
 	client := meta.(*namecheap.Client)
 
 	domain := strings.ToLower(data.Get("domain").(string))
