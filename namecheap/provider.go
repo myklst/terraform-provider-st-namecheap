@@ -5,7 +5,6 @@ import (
 	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"terraform-provider-st-namecheap/namecheap/internal/mutexkv"
 )
 
 var _info namecheap.DomainCreateInfo
@@ -313,7 +312,7 @@ func Provider() *schema.Provider {
 			//---------------------------------------------------------------------------------
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"namecheap_domain_records": resourceNamecheapDomainRecords(),
+			"namecheap_domain": resourceNamecheapDomain(),
 		},
 		ConfigureContextFunc: configureContext,
 	}
@@ -378,5 +377,3 @@ func configureContext(ctx context.Context, data *schema.ResourceData) (interface
 
 	return client, diag.Diagnostics{}
 }
-
-var ncMutexKV = mutexkv.NewMutexKV()
