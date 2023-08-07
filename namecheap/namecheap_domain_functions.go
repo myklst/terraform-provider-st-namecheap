@@ -3,10 +3,11 @@ package namecheap_provider
 import (
 	"context"
 	"fmt"
-	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 	"strings"
+	"terraform-provider-st-namecheap/namecheap/sdk"
 )
 
 func fixAddressEndWithDot(address *string) *string {
@@ -25,11 +26,11 @@ func createDomainIfNonexist(ctx context.Context, domain string, client *namechea
 		log(ctx, "Can not Get Domain Info:%s", domain)
 
 		//log.Println("Can not Get Domain Info, Creating:%s", domain)
-		resp, err := client.Domains.DomainsAvailable(domain)
+		resp, err := sdk.DomainsAvailable(client, domain)
 		if err == nil && *resp.Result.Available == true {
 			// no err and available, create
 			log(ctx, "Can not Get Domain Info, Creating %s", domain)
-			_, err = client.Domains.DomainsCreate(domain, _info)
+			_, err = sdk.DomainsCreate(client, domain, _info)
 
 			if err != nil {
 				log(ctx, "create domain %s failed, exit", domain)

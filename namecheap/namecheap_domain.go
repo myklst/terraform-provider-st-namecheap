@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 )
 
 func resourceNamecheapDomain() *schema.Resource {
@@ -28,6 +28,12 @@ func resourceNamecheapDomain() *schema.Resource {
 				ForceNew:     false,
 				ValidateFunc: validation.StringIsNotEmpty,
 				Description:  "Purchased available domain name on your account",
+			},
+			"renew": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Renew domain on your account",
+				DefaultFunc: schema.EnvDefaultFunc("NAMECHEAP_RENEW", false),
 			},
 		},
 	}

@@ -2,12 +2,13 @@ package namecheap_provider
 
 import (
 	"context"
-	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
+	"terraform-provider-st-namecheap/namecheap/sdk"
 )
 
-var _info namecheap.DomainCreateInfo
+var _info sdk.DomainCreateInfo
 
 func Provider() *schema.Provider {
 	return &schema.Provider{

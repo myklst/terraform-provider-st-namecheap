@@ -1,7 +1,7 @@
 package namecheap_provider
 
 import (
-	"github.com/agent-tao/go-namecheap-sdk/v2/namecheap"
+	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 )
 
 // equalDomainRecord compares only Name, Type, Address, TTL, MXPref fields only
