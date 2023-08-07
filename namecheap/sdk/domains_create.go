@@ -3,7 +3,6 @@ package sdk
 import (
 	"encoding/xml"
 	"fmt"
-
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 )
 
@@ -27,8 +26,6 @@ type DomainsCreateResult struct {
 }
 
 type DomainCreateInfo struct {
-	Years string
-
 	RegistrantFirstName     string
 	RegistrantLastName      string
 	RegistrantAddress1      string
@@ -70,7 +67,7 @@ type DomainCreateInfo struct {
 	AuxBillingEmailAddress  string
 }
 
-func DomainsCreate(client *namecheap.Client, domainName string, info DomainCreateInfo) (*DomainsCreateCommandResponse, error) {
+func DomainsCreate(client *namecheap.Client, domainName string, years string, info DomainCreateInfo) (*DomainsCreateCommandResponse, error) {
 
 	var response DomainsCreateResponse
 
@@ -78,7 +75,7 @@ func DomainsCreate(client *namecheap.Client, domainName string, info DomainCreat
 		"Command":    "namecheap.domains.create",
 		"DomainName": domainName,
 
-		"Years":                   info.Years,
+		"Years":                   years,
 		"RegistrantFirstName":     info.RegistrantFirstName,
 		"RegistrantLastName":      info.RegistrantLastName,
 		"RegistrantAddress1":      info.RegistrantAddress1,

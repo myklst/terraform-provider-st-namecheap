@@ -10,6 +10,10 @@ import (
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 )
 
+const MODE_CREATE = "create"
+const MODE_RENEW = "renew"
+const MODE_REACTIVATE = "reactivate"
+
 func resourceNamecheapDomain() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceDomainCreate,
@@ -29,11 +33,17 @@ func resourceNamecheapDomain() *schema.Resource {
 				ValidateFunc: validation.StringIsNotEmpty,
 				Description:  "Purchased available domain name on your account",
 			},
-			"renew": {
-				Type:        schema.TypeBool,
+			"mode": {
+				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Renew domain on your account",
-				DefaultFunc: schema.EnvDefaultFunc("NAMECHEAP_RENEW", false),
+				Description: "domain operation type, include create, renew, reactivate",
+				DefaultFunc: schema.EnvDefaultFunc("NAMECHEAP_MODE", "CREATE"),
+			},
+			"years": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Number of years to register",
+				Default:     "2",
 			},
 		},
 	}
@@ -42,7 +52,9 @@ func resourceNamecheapDomain() *schema.Resource {
 func resourceDomainImport(ctx context.Context, data *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	log(ctx, "resourceRecordImport!!!!!!!!!!!!")
 	if err := data.Set("domain", data.Id()); err != nil {
-
+		return nil, err
+	}
+	if err := data.Set("mode", MODE_CREATE); err != nil {
 		return nil, err
 	}
 
@@ -54,11 +66,25 @@ func resourceDomainCreate(ctx context.Context, data *schema.ResourceData, meta i
 	client := meta.(*namecheap.Client)
 
 	domain := strings.ToLower(data.Get("domain").(string))
+	mode := strings.ToLower(data.Get("mode").(string))
+	years := data.Get("years").(string)
 
-	//create domain if Domain doesn't exist
-	diags := createDomainIfNonexist(ctx, domain, client)
-	if diags.HasError() {
-		return diags
+	if mode == MODE_CREATE {
+		//create domain if Domain doesn't exist
+		diags := createDomainIfNonexist(ctx, domain, years, client)
+		if diags.HasError() {
+			return diags
+		}
+	} else if mode == MODE_RENEW {
+		diags := renewDomain(ctx, domain, years, client)
+		if diags.HasError() {
+			return diags
+		}
+	} else {
+		diags := reactivateDomain(ctx, domain, years, client)
+		if diags.HasError() {
+			return diags
+		}
 	}
 
 	data.SetId(domain)
@@ -95,12 +121,16 @@ func resourceDomainUpdate(ctx context.Context, data *schema.ResourceData, meta i
 	oldDomain := oldDomainRaw.(string)
 	newDomain := newDomainRaw.(string)
 
+	oldYearRaw, newYearRaw := data.GetChange("years")
+	_ = oldYearRaw.(string)
+	newYear := newYearRaw.(string)
+
 	if oldDomain != "" {
 		//delete
 	}
 
 	if newDomain != "" {
-		createDomainIfNonexist(ctx, newDomain, client)
+		createDomainIfNonexist(ctx, newDomain, newYear, client)
 	}
 
 	return nil

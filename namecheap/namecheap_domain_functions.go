@@ -17,7 +17,33 @@ func fixAddressEndWithDot(address *string) *string {
 	return address
 }
 
-func createDomainIfNonexist(ctx context.Context, domain string, client *namecheap.Client) diag.Diagnostics {
+func renewDomain(ctx context.Context, domain string, years string, client *namecheap.Client) diag.Diagnostics {
+
+	resp, err := sdk.DomainsRenew(client, domain, years)
+
+	if err != nil || *resp.Result.Renew == false {
+		log(ctx, "renew domain %s failed, exit", domain)
+		log(ctx, "reason:", err.Error())
+		return diag.Errorf("renew domain failed", domain)
+	}
+
+	return nil
+}
+
+func reactivateDomain(ctx context.Context, domain string, years string, client *namecheap.Client) diag.Diagnostics {
+
+	resp, err := sdk.DomainsReactivate(client, domain, years)
+
+	if err != nil || *resp.Result.IsSuccess == false {
+		log(ctx, "reactivate domain %s failed, exit", domain)
+		log(ctx, "reason:", err.Error())
+		return diag.Errorf("reactivate domain failed", domain)
+	}
+
+	return nil
+}
+
+func createDomainIfNonexist(ctx context.Context, domain string, years string, client *namecheap.Client) diag.Diagnostics {
 	//get domain info
 	_, err := client.Domains.GetInfo(domain)
 
@@ -30,7 +56,7 @@ func createDomainIfNonexist(ctx context.Context, domain string, client *namechea
 		if err == nil && *resp.Result.Available == true {
 			// no err and available, create
 			log(ctx, "Can not Get Domain Info, Creating %s", domain)
-			_, err = sdk.DomainsCreate(client, domain, _info)
+			_, err = sdk.DomainsCreate(client, domain, years, _info)
 
 			if err != nil {
 				log(ctx, "create domain %s failed, exit", domain)

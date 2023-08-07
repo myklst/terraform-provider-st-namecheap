@@ -51,13 +51,6 @@ func Provider() *schema.Provider {
 
 			//--------------------------------------------------------------------------------
 
-			"years": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Number of years to register",
-				Default:     "2",
-			},
-
 			"registrant_firstname": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -327,7 +320,6 @@ func configureContext(ctx context.Context, data *schema.ResourceData) (interface
 	clientIp := data.Get("client_ip").(string)
 	useSandbox := data.Get("use_sandbox").(bool)
 
-	_info.Years = data.Get("years").(string)
 	_info.RegistrantFirstName = data.Get("registrant_firstname").(string)
 	_info.RegistrantLastName = data.Get("registrant_lastname").(string)
 	_info.RegistrantAddress1 = data.Get("registrant_address1").(string)
