@@ -111,7 +111,3 @@ resource "namecheap_domain_records" "domain-com" {
 }
 
 ```
-
-### Contributing
-
-To contribute, please read our [contributing](CONTRIBUTING.md) docs.  
