@@ -1,9 +1,14 @@
 
 terraform {
   required_providers {
-    namecheap = {
-      source = "tao/namecheap"
+    st-namecheap = {
+      source = "st/namecheap"
       version = "= 2.2.0"
+    }
+
+    namecheap = {
+      source = "namecheap/namecheap"
+      version = "= 2.1.0"
     }
   }
 }
@@ -14,8 +19,20 @@ provider "namecheap" {
   api_key = "XXX"
   client_ip = "180.255.72.50"
   use_sandbox = false
+}
 
-  years = "1"
+resource "namecheap_domain_records" "records" {
+  provider = namecheap
+  domain = "sige-test11.com"
+}
+
+
+provider "st-namecheap" {
+  user_name = "haker0032"
+  api_user = "haker0032"
+  api_key = "XXX"
+  client_ip = "180.255.72.50"
+  use_sandbox = false
 
   registrant_firstname = "John"
   registrant_lastname = "Smith"
@@ -59,20 +76,9 @@ provider "namecheap" {
 
 }
 
-
-resource "namecheap_domain_records" "domain-com" {
+resource "namecheap_domain" "domain-com" {
+  provider = st-namecheap
   domain = "sige-test11.com"
-
-    record {
-        hostname = "dev"
-        type = "A"
-        address = "10.12.14.19"
-      }
-
-    record {
-        hostname = "dev"
-        type = "CNAME"
-        address = "hoho.com"
-      }
-
+  mode = "create"
+  years = 1
 }
