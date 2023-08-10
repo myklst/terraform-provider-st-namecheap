@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestDomainsCheck(t *testing.T) {
+func TestDomainsGetContacts(t *testing.T) {
 	client := namecheap.NewClient(&namecheap.ClientOptions{
 		UserName:   "haker0032",
 		ApiUser:    "haker0032",
@@ -14,11 +14,14 @@ func TestDomainsCheck(t *testing.T) {
 		UseSandbox: false,
 	})
 
-	r, err := DomainsAvailable(client, "hohojiang.com")
+	r, err := DomainsGetContacts(client)
 	if err != nil {
-
 		t.Error(err)
 	}
-	t.Log(*r.Result.Available)
 
+	t.Log(*r.Result.Domain)
+	t.Log(*r.Result.Registrant.Phone)
+	t.Log(*r.Result.Tech.Phone)
+	t.Log(*r.Result.Admin.Phone)
+	t.Log(*r.Result.AuxBilling.Phone)
 }

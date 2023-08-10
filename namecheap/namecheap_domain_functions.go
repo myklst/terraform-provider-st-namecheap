@@ -56,7 +56,14 @@ func createDomainIfNonexist(ctx context.Context, domain string, years string, cl
 		if err == nil && *resp.Result.Available == true {
 			// no err and available, create
 			log(ctx, "Can not Get Domain Info, Creating %s", domain)
-			_, err = sdk.DomainsCreate(client, domain, years, _info)
+			r, err := sdk.DomainsGetContacts(client)
+			if err != nil {
+				log(ctx, "domain %s get Contacts failed, exit", domain)
+				log(ctx, "reason:", err.Error())
+				return diag.Errorf("domain get contacts failed, please check the contacts in the account manually", domain)
+			}
+
+			_, err = sdk.DomainsCreate(client, domain, years, r)
 
 			if err != nil {
 				log(ctx, "create domain %s failed, exit", domain)

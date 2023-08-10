@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestDomainsCheck(t *testing.T) {
+func TestDomainsRenew(t *testing.T) {
 	client := namecheap.NewClient(&namecheap.ClientOptions{
 		UserName:   "haker0032",
 		ApiUser:    "haker0032",
@@ -14,11 +14,12 @@ func TestDomainsCheck(t *testing.T) {
 		UseSandbox: false,
 	})
 
-	r, err := DomainsAvailable(client, "hohojiang.com")
+	r, err := DomainsRenew(client, "hohojiang.com", "1")
 	if err != nil {
 
 		t.Error(err)
 	}
-	t.Log(*r.Result.Available)
+	t.Log(*r.Result.DomainName)
+	t.Log(*r.Result.Renew)
 
 }
