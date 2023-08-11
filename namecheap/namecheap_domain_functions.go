@@ -2,6 +2,7 @@ package namecheap_provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -56,11 +57,11 @@ func createDomainIfNonexist(ctx context.Context, domain string, years string, cl
 		if err == nil && *resp.Result.Available == true {
 			// no err and available, create
 			log(ctx, "Can not Get Domain Info, Creating %s", domain)
-			r, err := sdk.DomainsGetContacts(client)
+			r, err := getUserAccountContact(client)
 			if err != nil {
-				log(ctx, "domain %s get Contacts failed, exit", domain)
+				log(ctx, "get user Contacts failed, exit")
 				log(ctx, "reason:", err.Error())
-				return diag.Errorf("domain get contacts failed, please check the contacts in the account manually", domain)
+				return diag.Errorf("get user contacts failed, please check the contacts in the account manually", domain)
 			}
 
 			_, err = sdk.DomainsCreate(client, domain, years, r)
@@ -80,6 +81,28 @@ func createDomainIfNonexist(ctx context.Context, domain string, years string, cl
 		tflog.Info(ctx, "Domain %s exist, then do record config", domain)
 	}
 	return nil
+
+}
+
+func getUserAccountContact(client *namecheap.Client) (*sdk.UseraddrGetInfoCommandResponse, error) {
+
+	r1, err := sdk.UseraddrGetList(client)
+	if err != nil {
+		return nil, err
+	}
+	addrlen := len(*r1.Result.List)
+	if addrlen == 0 {
+		return nil, errors.New("UseraddrGetList returns 0, please add user contact info to this account")
+	}
+
+	addrId := *(*r1.Result.List)[0].AddressId
+
+	r2, err := sdk.UseraddrGetInfo(client, addrId)
+	if err != nil {
+		return nil, err
+	}
+
+	return r2, nil
 
 }
 
