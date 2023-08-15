@@ -25,9 +25,10 @@ func renewDomain(ctx context.Context, domain string, years string, client *namec
 	if err != nil || *resp.Result.Renew == false {
 		log(ctx, "renew domain %s failed, exit", domain)
 		log(ctx, "reason:", err.Error())
-		return diag.Errorf("renew domain failed", domain)
+		return diag.Errorf("renew domain [%s] failed", domain)
 	}
 
+	log(ctx, "renew domain [%s] success", domain)
 	return nil
 }
 
@@ -38,48 +39,49 @@ func reactivateDomain(ctx context.Context, domain string, years string, client *
 	if err != nil || *resp.Result.IsSuccess == false {
 		log(ctx, "reactivate domain %s failed, exit", domain)
 		log(ctx, "reason:", err.Error())
-		return diag.Errorf("reactivate domain failed", domain)
+		return diag.Errorf("reactivate domain [%s] failed", domain)
 	}
 
+	log(ctx, "reactivate domain [%s] success", domain)
 	return nil
 }
 
-func createDomainIfNonexist(ctx context.Context, domain string, years string, client *namecheap.Client) diag.Diagnostics {
+func createDomain(ctx context.Context, domain string, years string, client *namecheap.Client) diag.Diagnostics {
 	//get domain info
 	_, err := client.Domains.GetInfo(domain)
+	if err == nil {
+		return diag.Errorf("domain [%s] has been created in this account", domain)
+	}
 
 	//if domain does not exist, then create
-	if err != nil {
-		log(ctx, "Can not Get Domain Info:%s", domain)
 
-		//log.Println("Can not Get Domain Info, Creating:%s", domain)
-		resp, err := sdk.DomainsAvailable(client, domain)
-		if err == nil && *resp.Result.Available == true {
-			// no err and available, create
-			log(ctx, "Can not Get Domain Info, Creating %s", domain)
-			r, err := getUserAccountContact(client)
-			if err != nil {
-				log(ctx, "get user Contacts failed, exit")
-				log(ctx, "reason:", err.Error())
-				return diag.Errorf("get user contacts failed, please check the contacts in the account manually", domain)
-			}
-
-			_, err = sdk.DomainsCreate(client, domain, years, r)
-
-			if err != nil {
-				log(ctx, "create domain %s failed, exit", domain)
-				log(ctx, "reason:", err.Error())
-				return diag.Errorf("create domain failed", domain)
-			}
-
-		} else {
-			log(ctx, "domain %s is not available, exiting!", domain)
-			return diag.Errorf("domain is not available to register, you need to change to another domain", domain)
+	//log.Println("Can not Get Domain Info, Creating:%s", domain)
+	resp, err := sdk.DomainsAvailable(client, domain)
+	if err == nil && *resp.Result.Available == true {
+		// no err and available, create
+		log(ctx, "Domain [%s] is available, Creating...", domain)
+		r, err := getUserAccountContact(client)
+		if err != nil {
+			log(ctx, "get user Contacts failed, exit")
+			log(ctx, "reason:", err.Error())
+			return diag.Errorf("get user contacts failed, please check the contacts in the account manually", domain)
 		}
+
+		log(ctx, "debug domain create", r)
+
+		_, err = sdk.DomainsCreate(client, domain, years, r)
+
+		if err != nil {
+			log(ctx, "create domain [%s] failed, exit", domain)
+			log(ctx, "reason:", err.Error())
+			return diag.Errorf("create domain [%s] failed", domain)
+		}
+
 	} else {
-		//skip, do nothing
-		tflog.Info(ctx, "Domain %s exist, then do record config", domain)
+		log(ctx, "domain [%s] is not available, exiting!", domain)
+		return diag.Errorf("domain [%s] is not available to register, you need to change to another domain", domain)
 	}
+
 	return nil
 
 }

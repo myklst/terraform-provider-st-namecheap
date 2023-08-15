@@ -50,7 +50,7 @@ func resourceNamecheapDomain() *schema.Resource {
 }
 
 func resourceDomainImport(ctx context.Context, data *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	log(ctx, "resourceRecordImport!!!!!!!!!!!!")
+	log(ctx, "[resourceRecordImport!]")
 	if err := data.Set("domain", data.Id()); err != nil {
 		return nil, err
 	}
@@ -62,29 +62,31 @@ func resourceDomainImport(ctx context.Context, data *schema.ResourceData, meta i
 }
 
 func resourceDomainCreate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	log(ctx, "resourceDomainCreate!!!!!!!!!!!!")
+	log(ctx, "[resourceDomainCreate!]")
 	client := meta.(*namecheap.Client)
 
 	domain := strings.ToLower(data.Get("domain").(string))
 	mode := strings.ToLower(data.Get("mode").(string))
 	years := data.Get("years").(string)
 
-	if mode == MODE_CREATE {
-		//create domain if Domain doesn't exist
-		diags := createDomainIfNonexist(ctx, domain, years, client)
+	switch mode {
+	case MODE_CREATE:
+		diags := createDomain(ctx, domain, years, client)
 		if diags.HasError() {
 			return diags
 		}
-	} else if mode == MODE_RENEW {
+	case MODE_RENEW:
 		diags := renewDomain(ctx, domain, years, client)
 		if diags.HasError() {
 			return diags
 		}
-	} else {
+	case MODE_REACTIVATE:
 		diags := reactivateDomain(ctx, domain, years, client)
 		if diags.HasError() {
 			return diags
 		}
+	default:
+		//do nothing
 	}
 
 	data.SetId(domain)
@@ -94,7 +96,7 @@ func resourceDomainCreate(ctx context.Context, data *schema.ResourceData, meta i
 
 func resourceDomainRead(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
-	log(ctx, "resourceDomainRead!!!!!!!!!!!!")
+	log(ctx, "[resourceDomainRead!]")
 
 	client := meta.(*namecheap.Client)
 
@@ -110,27 +112,29 @@ func resourceDomainRead(ctx context.Context, data *schema.ResourceData, meta int
 
 func resourceDomainUpdate(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
-	log(ctx, "resourceRecordUpdate!!!!!!!!!!!!")
+	log(ctx, "[resourceRecordUpdate!]")
 
 	client := meta.(*namecheap.Client)
 
-	//domain := strings.ToLower(data.Get("domain").(string))
-
-	oldDomainRaw, newDomainRaw := data.GetChange("domain")
-
-	oldDomain := oldDomainRaw.(string)
+	//we can do nothing on old name,year and mode
+	_, newDomainRaw := data.GetChange("domain")
 	newDomain := newDomainRaw.(string)
 
-	oldYearRaw, newYearRaw := data.GetChange("years")
-	_ = oldYearRaw.(string)
+	_, newYearRaw := data.GetChange("years")
 	newYear := newYearRaw.(string)
 
-	if oldDomain != "" {
-		//delete
-	}
+	_, newModeRaw := data.GetChange("mode")
+	newMode := newModeRaw.(string)
 
-	if newDomain != "" {
-		createDomainIfNonexist(ctx, newDomain, newYear, client)
+	switch newMode {
+	case MODE_CREATE:
+		createDomain(ctx, newDomain, newYear, client)
+	case MODE_RENEW:
+		renewDomain(ctx, newDomain, newYear, client)
+	case MODE_REACTIVATE:
+		reactivateDomain(ctx, newDomain, newYear, client)
+	default:
+
 	}
 
 	return nil
@@ -138,7 +142,7 @@ func resourceDomainUpdate(ctx context.Context, data *schema.ResourceData, meta i
 
 func resourceDomainDelete(ctx context.Context, data *schema.ResourceData, meta interface{}) diag.Diagnostics {
 
-	log(ctx, "resourceRecordDelete!!!!!!!!!!!!")
+	log(ctx, "[resourceRecordDelete!]")
 
 	// do nothing
 

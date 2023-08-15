@@ -72,3 +72,5 @@ resource "namecheap_domain_records" "domain-com" {
 }
 
 ```
+
+export TF_LOG=DEBUG
