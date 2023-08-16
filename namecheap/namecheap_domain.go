@@ -128,11 +128,20 @@ func resourceDomainUpdate(ctx context.Context, data *schema.ResourceData, meta i
 
 	switch newMode {
 	case MODE_CREATE:
-		createDomain(ctx, newDomain, newYear, client)
+		diags := createDomain(ctx, newDomain, newYear, client)
+		if diags.HasError() {
+			return diags
+		}
 	case MODE_RENEW:
-		renewDomain(ctx, newDomain, newYear, client)
+		diags := renewDomain(ctx, newDomain, newYear, client)
+		if diags.HasError() {
+			return diags
+		}
 	case MODE_REACTIVATE:
-		reactivateDomain(ctx, newDomain, newYear, client)
+		diags := reactivateDomain(ctx, newDomain, newYear, client)
+		if diags.HasError() {
+			return diags
+		}
 	default:
 
 	}
