@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
+	"strconv"
 )
 
 const MODE_CREATE = "create"
@@ -61,43 +62,6 @@ func (r *namecheapDomainResource) Configure(_ context.Context, req resource.Conf
 	r.client = req.ProviderData.(*namecheap.Client)
 }
 
-/*
-	func resourceNamecheapDomain() *schema.Resource {
-		return &schema.Resource{
-			CreateContext: resourceDomainCreate,
-			UpdateContext: resourceDomainUpdate,
-			ReadContext:   resourceDomainRead,
-			DeleteContext: resourceDomainDelete,
-
-			Importer: &schema.ResourceImporter{
-				StateContext: resourceDomainImport,
-			},
-
-			Schema: map[string]*schema.Schema{
-				"domain": {
-					Type:         schema.TypeString,
-					Required:     true,
-					ForceNew:     false,
-					ValidateFunc: validation.StringIsNotEmpty,
-					Description:  "Purchased available domain name on your account",
-				},
-				"mode": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Description: "domain operation type, include create, renew, reactivate",
-					DefaultFunc: schema.EnvDefaultFunc("NAMECHEAP_MODE", "CREATE"),
-				},
-				"years": {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Description: "Number of years to register",
-					Default:     "2",
-				},
-			},
-		}
-	}
-*/
-
 func (r *namecheapDomainResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import RecordId and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("domain"), req, resp)
@@ -115,24 +79,24 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	domain := plan.Domain.ValueString()
-	mode := plan.Mode.String()
-	years := plan.Years.String()
+	mode := plan.Mode.ValueString()
+	years := plan.Years.ValueInt64()
 
 	switch mode {
 	case MODE_CREATE:
-		diag := createDomain(ctx, domain, years, r.client)
+		diag := createDomain(ctx, domain, strconv.FormatInt(years, 10), r.client)
 		resp.Diagnostics.Append(diag)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	case MODE_RENEW:
-		diag := renewDomain(ctx, domain, years, r.client)
+		diag := renewDomain(ctx, domain, strconv.FormatInt(years, 10), r.client)
 		resp.Diagnostics.Append(diag)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	case MODE_REACTIVATE:
-		diag := reactivateDomain(ctx, domain, years, r.client)
+		diag := reactivateDomain(ctx, domain, strconv.FormatInt(years, 10), r.client)
 		resp.Diagnostics.Append(diag)
 		if resp.Diagnostics.HasError() {
 			return
@@ -194,23 +158,24 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 	}
 
 	newDomain := plan.Domain.ValueString()
-	newMode := plan.Mode.String()
-	newYear := plan.Years.String()
+	newMode := plan.Mode.ValueString()
+	newYear := plan.Years.ValueInt64()
+
 	switch newMode {
 	case MODE_CREATE:
-		diag := createDomain(ctx, newDomain, newYear, r.client)
+		diag := createDomain(ctx, newDomain, strconv.FormatInt(newYear, 10), r.client)
 		resp.Diagnostics.Append(diag)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	case MODE_RENEW:
-		diag := renewDomain(ctx, newDomain, newYear, r.client)
+		diag := renewDomain(ctx, newDomain, strconv.FormatInt(newYear, 10), r.client)
 		resp.Diagnostics.Append(diag)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	case MODE_REACTIVATE:
-		diag := reactivateDomain(ctx, newDomain, newYear, r.client)
+		diag := reactivateDomain(ctx, newDomain, strconv.FormatInt(newYear, 10), r.client)
 		resp.Diagnostics.Append(diag)
 		if resp.Diagnostics.HasError() {
 			return
