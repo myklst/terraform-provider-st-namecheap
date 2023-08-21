@@ -26,7 +26,7 @@ func (p *namecheapProvider) Metadata(_ context.Context, _ provider.MetadataReque
 // Schema defines the provider-level schema for configuration data.
 func (p *namecheapProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The Alibaba Cloud provider is used to interact with the many resources supported by Alibaba Cloud. " +
+		Description: "The namecheap domain provider is used to interact with the namecheap to manage domains from it. " +
 			"The provider needs to be configured with the proper credentials before it can be used.",
 		Attributes: map[string]schema.Attribute{
 			"user_name": schema.StringAttribute{
