@@ -2,10 +2,12 @@ package namecheap_provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 	"strconv"
 )
@@ -30,7 +32,7 @@ type namecheapDomainResourceModel struct {
 
 // Metadata returns the resource namecheap_domain type name.
 func (r *namecheapDomainResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "namecheap_domain"
+	resp.TypeName = req.ProviderTypeName + "_domain"
 }
 
 // Schema defines the schema for the namecheap_domain resource.
@@ -192,5 +194,16 @@ func (r *namecheapDomainResource) Delete(ctx context.Context, req resource.Delet
 
 	log(ctx, "[resourceRecordDelete!]")
 
-	//since domain can not be deleted in namecheap, so we do nothing here
+	var state *namecheapDomainResourceModel
+	getStateDiags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(getStateDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	domain := state.Domain.ValueString()
+
+	//since domain can not be deleted in namecheap, so we do nothing here but give a warning
+	msg := fmt.Sprintf("since domain can not be deleted in namecheap, %s still exist actually  ", domain)
+	tflog.Warn(ctx, msg)
+
 }

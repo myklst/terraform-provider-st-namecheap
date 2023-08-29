@@ -10,7 +10,7 @@ OS := $(shell go env GOOS)
 
 OS_ARCH=darwin_arm64
 
-BINARY := "terraform-provider-namecheap_v$(VERSION)"
+BINARY := "terraform-provider-st-namecheap_v$(VERSION)"
 
 format:
 	go fmt ./...
@@ -33,10 +33,10 @@ build:
 local:
 	go build -o $(BINARY) -ldflags='-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT)' .
 	rm -rf ~/.terraform/plugins/terraform-namecheap
-	rm -rf ~/.terraform.d/plugins/registry.terraform.io/st/namecheap/$(VERSION)/$(OS)_$(ARCH)
-	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/st/namecheap/$(VERSION)/$(OS)_$(ARCH)/
-	mv $(BINARY) ~/.terraform.d/plugins/registry.terraform.io/st/namecheap/$(VERSION)/$(OS)_$(ARCH)/
-	chmod +x ~/.terraform.d/plugins/registry.terraform.io/st/namecheap/$(VERSION)/$(OS)_$(ARCH)/$(BINARY)
+	rm -rf ~/.terraform.d/plugins/registry.terraform.io/myklst/st-namecheap/$(VERSION)/$(OS)_$(ARCH)
+	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/myklst/st-namecheap/$(VERSION)/$(OS)_$(ARCH)/
+	mv $(BINARY) ~/.terraform.d/plugins/registry.terraform.io/myklst/st-namecheap/$(VERSION)/$(OS)_$(ARCH)/
+	chmod +x ~/.terraform.d/plugins/registry.terraform.io/myklst/st-namecheap/$(VERSION)/$(OS)_$(ARCH)/$(BINARY)
 
 
 release:

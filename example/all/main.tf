@@ -2,7 +2,7 @@
 terraform {
   required_providers {
     st-namecheap = {
-      source = "st/namecheap"
+      source = "myklst/st-namecheap"
       version = "= 2.2.0"
     }
 
@@ -36,7 +36,7 @@ provider "st-namecheap" {
 
 }
 
-resource "namecheap_domain" "domain-com" {
+resource "st-namecheap_domain" "domain-com" {
   provider = st-namecheap
   domain = "sige-test11.com"
   mode = "create"

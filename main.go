@@ -3,19 +3,12 @@ package main
 import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	namecheap_provider "github.com/myklst/terraform-provider-st-namecheap/namecheap"
 	"os"
-	namecheap_provider "terraform-provider-st-namecheap/namecheap"
 )
 
 // Generate the Terraform provider documentation using `tfplugindocs`:
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-
-/*
-func main() {
-	plugin.Serve(&plugin.ServeOpts{
-		ProviderFunc: namecheap.Provider,
-	})
-}*/
 
 func main() {
 	providerAddress := os.Getenv("PROVIDER_LOCAL_PATH")
