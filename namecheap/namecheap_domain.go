@@ -3,13 +3,14 @@ package namecheap_provider
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
-	"strconv"
 )
 
 const MODE_CREATE = "create"
@@ -38,10 +39,9 @@ func (r *namecheapDomainResource) Metadata(_ context.Context, req resource.Metad
 // Schema defines the schema for the namecheap_domain resource.
 func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Provides a namecheap_domain resource.",
 		Attributes: map[string]schema.Attribute{
 			"domain": schema.StringAttribute{
-				Description: "Purchased available domain name on your account",
+				Description: "Domain name to create",
 				Required:    true,
 			},
 			"mode": schema.StringAttribute{
@@ -71,8 +71,8 @@ func (r *namecheapDomainResource) ImportState(ctx context.Context, req resource.
 
 // Create a new namecheap_domain resource
 func (r *namecheapDomainResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-
 	log(ctx, "[resourceDomainCreate!]")
+
 	var plan *namecheapDomainResourceModel
 	getStateDiags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(getStateDiags...)
@@ -123,8 +123,8 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 
 // Read namecheap_domain resource information
 func (r *namecheapDomainResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-
 	log(ctx, "[resourceDomainRead!]")
+
 	// Get current state
 	var state *namecheapDomainResourceModel
 	getStateDiags := req.State.Get(ctx, &state)
@@ -148,8 +148,8 @@ func (r *namecheapDomainResource) Read(ctx context.Context, req resource.ReadReq
 
 // Update namecheap_domain resource and sets the updated Terraform state on success.
 func (r *namecheapDomainResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-
 	log(ctx, "[resourceRecordUpdate!]")
+
 	var plan *namecheapDomainResourceModel
 	// Retrieve values from plan
 	getPlanDiags := req.Plan.Get(ctx, &plan)
@@ -186,12 +186,10 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 		resp.Diagnostics.AddError("invalid mode value", newMode)
 		return
 	}
-
 }
 
 // Delete namecheap_domain resource and removes the Terraform state on success.
 func (r *namecheapDomainResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-
 	log(ctx, "[resourceRecordDelete!]")
 
 	var state *namecheapDomainResourceModel
@@ -205,5 +203,4 @@ func (r *namecheapDomainResource) Delete(ctx context.Context, req resource.Delet
 	//since domain can not be deleted in namecheap, so we do nothing here but give a warning
 	msg := fmt.Sprintf("since domain can not be deleted in namecheap, %s still exist actually  ", domain)
 	tflog.Warn(ctx, msg)
-
 }

@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/myklst/terraform-provider-st-namecheap/namecheap/sdk"
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
-	"strings"
 )
 
 func fixAddressEndWithDot(address *string) *string {
@@ -116,5 +117,4 @@ func getUserAccountContact(client *namecheap.Client) (*sdk.UseraddrGetInfoComman
 func log(ctx context.Context, format string, a ...any) {
 	msg := fmt.Sprintf(format, a)
 	tflog.Info(ctx, msg)
-
 }
