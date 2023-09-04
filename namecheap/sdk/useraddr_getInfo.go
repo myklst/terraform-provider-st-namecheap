@@ -46,7 +46,7 @@ func UseraddrGetInfo(client *namecheap.Client, addrId string) (*UseraddrGetInfoC
 		"AddressId": addrId,
 	}
 
-	_, err := client.DoXML(params, &response)
+	_, err := DoXmlWithRetry(client, params, &response)
 
 	if err != nil {
 		return nil, err

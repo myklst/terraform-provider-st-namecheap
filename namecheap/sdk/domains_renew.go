@@ -34,7 +34,7 @@ func DomainsRenew(client *namecheap.Client, domains string, years string) (*Doma
 		"Years":      years,
 	}
 
-	_, err := client.DoXML(params, &response)
+	_, err := DoXmlWithRetry(client, params, &response)
 
 	if err != nil {
 		return nil, err

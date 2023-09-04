@@ -81,7 +81,7 @@ func DomainsCreate(client *namecheap.Client, domainName string, years string, in
 		"Extended attributes": "",
 		"Nameservers":         "",
 	}
-	_, err := client.DoXML(params, &response)
+	_, err := DoXmlWithRetry(client, params, &response)
 
 	if err != nil {
 		return nil, err

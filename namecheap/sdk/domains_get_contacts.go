@@ -65,7 +65,7 @@ func DomainsGetContacts(client *namecheap.Client) (*DomainsGetContactsCommandRes
 		"DomainName": *domain.Name,
 	}
 
-	_, err = client.DoXML(params, &response)
+	_, err = DoXmlWithRetry(client, params, &response)
 
 	if err != nil {
 		return nil, err

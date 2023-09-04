@@ -9,10 +9,10 @@ terraform {
 
 
 provider "st-namecheap" {
-  user_name = "XXX"
-  api_user = "XXX"
-  api_key = "XXXX"
-  client_ip = "180.255.72.50"
+  user_name   = "XXX"
+  api_user    = "XXX"
+  api_key     = "XXXX"
+  client_ip   = "180.255.72.50"
   use_sandbox = false
 
 }

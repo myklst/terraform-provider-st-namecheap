@@ -14,65 +14,45 @@ API) to this [whitelist admin page](https://ap.www.namecheap.com/settings/tools/
 Once you've done that, make note of the API key, your IP address, and your
 username to fill into our `provider` block.
 
-## Usage Example
 
-Make sure your API details are correct in the provider block.
+Supported Versions
+------------------
 
-Terraform 0.13 and later:
+| Terraform version | minimum provider version |maxmimum provider version
+| ---- |--------------------------| ----|
+| >= 1.3.x	| 2.2.0	                   | latest |
 
-```hcl
-terraform {
-  required_providers {
-    st-namecheap = {
-      source = "st/namecheap"
-      version = "= 2.2.0"
+Requirements
+------------
+
+-	[Terraform](https://www.terraform.io/downloads.html) 1.3.x
+-	[Go](https://golang.org/doc/install) 1.19 (to build the provider plugin)
+
+Local Installation
+------------------
+
+1. Run make file `make install-local-custom-provider` to install the provider under ~/.terraform.d/plugins.
+
+2. The provider source should be change to the path that configured in the *Makefile*:
+
+    ```
+    terraform {
+      required_providers {
+        st-alicloud = {
+          source = "example.local/myklst/st-namecheap"
+        }
+      }
     }
 
-    namecheap = {
-      source = "namecheap/namecheap"
-      version = "= 2.1.0"
+    provider "st-namecheap" {
+        user_name   = "XXX"
+        api_user    = "XXX"
+        api_key     = "XXXX"
+        client_ip   = "X.X.X.X"
+        use_sandbox = false
+       
     }
-  }
-}
+    ```
 
-provider "namecheap" {
-  user_name = "your_username"
-  api_user = "your_username"
-  api_key = "your_api_key"
-  client_ip = "your.ip.address.here"
-  use_sandbox = false
-}
-
-provider "st-namecheap" {
-  user_name = "your_username"
-  api_user = "your_username"
-  api_key = "your_api_key"
-  client_ip = "your.ip.address.here"
-  use_sandbox = false
-
-}
-
-resource "namecheap_domain" "domain-com" {
-  provider = st-namecheap
-
-  domain = "domain.com"
-  mode = "create"
-  years = 1
-}
-
-resource "namecheap_domain_records" "domain-com" {
-  provider = namecheap
-
-  domain = "domain.com"
-  mode = "OVERWRITE"
-
-  record {
-    hostname = "dev"
-    type = "A"
-    address = "10.12.14.19"
-  }
-}
-
-```
 
 export TF_LOG=DEBUG
