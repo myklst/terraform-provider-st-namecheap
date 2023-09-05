@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -112,6 +113,39 @@ func getUserAccountContact(client *namecheap.Client) (*sdk.UseraddrGetInfoComman
 
 	return r2, nil
 
+}
+
+func CalculateMode(client *namecheap.Client, modelInfo *namecheapDomainResourceModel) string {
+	domain := modelInfo.Domain.ValueString()
+
+	var listArgs namecheap.DomainsGetListArgs
+	listArgs.SearchTerm = &domain
+
+	r, err := client.Domains.GetList(&listArgs)
+	if err != nil {
+		return MODE_CREATE
+	}
+
+	rName := *((*r.Domains)[0].Name)
+
+	if rName != domain {
+		return MODE_CREATE
+	}
+
+	isExpired := *((*r.Domains)[0].IsExpired)
+	if isExpired {
+		return MODE_REACTIVATE
+	}
+
+	minDaysRemain := modelInfo.MinDaysRemaining.ValueInt64()
+
+	expires := *((*r.Domains)[0].Expires)
+	diff := expires.Sub(time.Now())
+	if int64(diff.Hours()) < minDaysRemain*24 {
+		return MODE_RENEW
+	}
+
+	return MODE_SKIP
 }
 
 func log(ctx context.Context, format string, a ...any) {

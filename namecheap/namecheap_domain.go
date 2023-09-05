@@ -16,6 +16,7 @@ import (
 const MODE_CREATE = "create"
 const MODE_RENEW = "renew"
 const MODE_REACTIVATE = "reactivate"
+const MODE_SKIP = "skip"
 
 func NewNamecheapDomainResource() resource.Resource {
 	return &namecheapDomainResource{}
@@ -26,9 +27,9 @@ type namecheapDomainResource struct {
 }
 
 type namecheapDomainResourceModel struct {
-	Domain types.String `tfsdk:"domain"`
-	Mode   types.String `tfsdk:"mode"`
-	Years  types.Int64  `tfsdk:"years"`
+	Domain           types.String `tfsdk:"domain"`
+	MinDaysRemaining types.Int64  `tfsdk:"min_days_remaining"`
+	Years            types.Int64  `tfsdk:"auto_renew_years"`
 }
 
 // Metadata returns the resource namecheap_domain type name.
@@ -44,12 +45,12 @@ func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaReq
 				Description: "Domain name to create",
 				Required:    true,
 			},
-			"mode": schema.StringAttribute{
-				Description: "domain operation type, include create, renew, reactivate.",
+			"min_days_remaining": schema.Int64Attribute{
+				Description: "maintain min days remain to renew, reactivate.",
 				Required:    true,
 			},
-			"years": schema.Int64Attribute{
-				Description: "Number of years to register",
+			"auto_renew_years": schema.Int64Attribute{
+				Description: "Number of years to register and renew",
 				Required:    true,
 			},
 		},
@@ -81,8 +82,10 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	domain := plan.Domain.ValueString()
-	mode := plan.Mode.ValueString()
 	years := plan.Years.ValueInt64()
+
+	mode := CalculateMode(r.client, plan)
+	log(ctx, "CalculateMode Complete,Mode = %s", mode)
 
 	switch mode {
 	case MODE_CREATE:
@@ -103,6 +106,8 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 		if resp.Diagnostics.HasError() {
 			return
 		}
+	case MODE_SKIP:
+
 	default:
 		resp.Diagnostics.AddError("invalid mode value", mode)
 		return
@@ -110,9 +115,9 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 
 	// Set state items
 	state := &namecheapDomainResourceModel{}
-	state.Mode = plan.Mode
 	state.Domain = plan.Domain
 	state.Years = plan.Years
+	state.MinDaysRemaining = plan.MinDaysRemaining
 
 	setStateDiags := resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(setStateDiags...)
@@ -160,8 +165,10 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 	}
 
 	newDomain := plan.Domain.ValueString()
-	newMode := plan.Mode.ValueString()
+
 	newYear := plan.Years.ValueInt64()
+	newMode := CalculateMode(r.client, plan)
+	log(ctx, "CalculateMode Complete,Mode = %s", newMode)
 
 	switch newMode {
 	case MODE_CREATE:
@@ -182,8 +189,22 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 		if resp.Diagnostics.HasError() {
 			return
 		}
+	case MODE_SKIP:
+
 	default:
 		resp.Diagnostics.AddError("invalid mode value", newMode)
+		return
+	}
+
+	// Set state items
+	state := &namecheapDomainResourceModel{}
+	state.Domain = plan.Domain
+	state.Years = plan.Years
+	state.MinDaysRemaining = plan.MinDaysRemaining
+
+	setStateDiags := resp.State.Set(ctx, state)
+	resp.Diagnostics.Append(setStateDiags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 }
