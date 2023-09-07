@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/myklst/terraform-provider-st-namecheap/namecheap/sdk"
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
+
+	"github.com/myklst/terraform-provider-st-namecheap/namecheap/sdk"
 )
 
 func fixAddressEndWithDot(address *string) *string {
@@ -43,7 +43,7 @@ func reactivateDomain(ctx context.Context, domain string, years string, client *
 
 	resp, err := sdk.DomainsReactivate(client, domain, years)
 
-	if err != nil || *resp.Result.IsSuccess == false {
+	if err != nil || !*resp.Result.IsSuccess {
 		log(ctx, "reactivate domain %s failed, exit", domain)
 		log(ctx, "reason:", err.Error())
 		return DiagnosticErrorOf("reactivate domain [%s] failed", domain)
@@ -113,39 +113,6 @@ func getUserAccountContact(client *namecheap.Client) (*sdk.UseraddrGetInfoComman
 
 	return r2, nil
 
-}
-
-func CalculateMode(client *namecheap.Client, modelInfo *namecheapDomainResourceModel) string {
-	domain := modelInfo.Domain.ValueString()
-
-	var listArgs namecheap.DomainsGetListArgs
-	listArgs.SearchTerm = &domain
-
-	r, err := client.Domains.GetList(&listArgs)
-	if err != nil {
-		return MODE_CREATE
-	}
-
-	rName := *((*r.Domains)[0].Name)
-
-	if rName != domain {
-		return MODE_CREATE
-	}
-
-	isExpired := *((*r.Domains)[0].IsExpired)
-	if isExpired {
-		return MODE_REACTIVATE
-	}
-
-	minDaysRemain := modelInfo.MinDaysRemaining.ValueInt64()
-
-	expires := *((*r.Domains)[0].Expires)
-	diff := expires.Sub(time.Now())
-	if int64(diff.Hours()) < minDaysRemain*24 {
-		return MODE_RENEW
-	}
-
-	return MODE_SKIP
 }
 
 func log(ctx context.Context, format string, a ...any) {

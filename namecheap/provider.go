@@ -21,6 +21,14 @@ var (
 
 type namecheapProvider struct{}
 
+type namecheapProviderModel struct {
+	UserName   types.String `tfsdk:"user_name"`
+	ApiUser    types.String `tfsdk:"api_user"`
+	ApiKey     types.String `tfsdk:"api_key"`
+	ClientIp   types.String `tfsdk:"client_ip"`
+	UseSandbox types.Bool   `tfsdk:"use_sandbox"`
+}
+
 // New is a helper function to simplify provider server
 func New() provider.Provider {
 	return &namecheapProvider{}
@@ -38,15 +46,17 @@ func (p *namecheapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 			"The provider needs to be configured with the proper credentials before it can be used.",
 		Attributes: map[string]schema.Attribute{
 			"user_name": schema.StringAttribute{
-				Description: "A registered user name for namecheap. May also be provided via NAMECHEAP_USER_NAME environment variable.",
-				Optional:    true,
+				Description: "A registered user name for NameCheap. May also be provided via NAMECHEAP_USER_NAME " +
+					"environment variable.",
+				Optional: true,
 			},
 			"api_user": schema.StringAttribute{
-				Description: "A registered api user for namecheap. May also be provided via NAMECHEAP_API_USER environment variable.",
-				Optional:    true,
+				Description: "A registered api user for NameCheap. May also be provided via NAMECHEAP_API_USER " +
+					"environment variable.",
+				Optional: true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: "The namecheap API key. May also be provided via NAMECHEAP_API_KEY environment variable.",
+				Description: "The NameCheap API key. May also be provided via NAMECHEAP_API_KEY environment variable.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -55,22 +65,17 @@ func (p *namecheapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 				Optional:    true,
 			},
 			"use_sandbox": schema.BoolAttribute{
-				Description: "Whether to use sandbox API endpoints. May also be provided via NAMECHEAP_USE_SANDBOX environment variable.",
-				Optional:    true,
+				Description: "Whether to use sandbox API endpoints. May also be provided via NAMECHEAP_USE_SANDBOX " +
+					"environment variable.",
+				Optional: true,
 			},
 		},
 	}
 }
 
 func (p *namecheapProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var cred struct {
-		UserName   types.String `tfsdk:"user_name"`
-		ApiUser    types.String `tfsdk:"api_user"`
-		ApiKey     types.String `tfsdk:"api_key"`
-		ClientIp   types.String `tfsdk:"client_ip"`
-		UseSandbox types.Bool   `tfsdk:"use_sandbox"`
-	}
-	diags := req.Config.Get(ctx, &cred)
+	var config namecheapProviderModel
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -78,48 +83,53 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 
 	// If practitioner provided a configuration value for any of the
 	// attributes, it must be a known value.
-	if cred.UserName.IsUnknown() {
+	if config.UserName.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("user_name"),
 			"Unknown user_name",
 			"The provider cannot create the NameCheap API client as there is an unknown configuration value for the"+
-				"NameCheap user_name. Set the value statically in the configuration, or use the NAMECHEAP_USER_NAME environment variable.",
+				"NameCheap user_name. Set the value statically in the configuration, or use the NAMECHEAP_USER_NAME "+
+				"environment variable.",
 		)
 	}
 
-	if cred.ApiUser.IsUnknown() {
+	if config.ApiUser.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_user"),
 			"Unknown api_user",
 			"The provider cannot create the NameCheap API client as there is an unknown configuration value for the"+
-				"NameCheap api_user. Set the value statically in the configuration, or use the NAMECHEAP_API_USER environment variable.",
+				"NameCheap api_user. Set the value statically in the configuration, or use the NAMECHEAP_API_USER "+
+				"environment variable.",
 		)
 	}
 
-	if cred.ApiKey.IsUnknown() {
+	if config.ApiKey.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_key"),
 			"Unknown api_key",
 			"The provider cannot create the NameCheap API client as there is an unknown configuration value for the"+
-				"NameCheap api_key. Set the value statically in the configuration, or use the NAMECHEAP_API_KEY environment variable.",
+				"NameCheap api_key. Set the value statically in the configuration, or use the NAMECHEAP_API_KEY "+
+				"environment variable.",
 		)
 	}
 
-	if cred.ClientIp.IsUnknown() {
+	if config.ClientIp.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("client_ip"),
 			"Unknown client_ip",
 			"The provider cannot create the NameCheap API client as there is an unknown configuration value for the"+
-				"NameCheap client_ip. Set the value statically in the configuration, or use the NAMECHEAP_CLIENT_IP environment variable.",
+				"NameCheap client_ip. Set the value statically in the configuration, or use the NAMECHEAP_CLIENT_IP "+
+				"environment variable.",
 		)
 	}
 
-	if cred.UseSandbox.IsUnknown() {
+	if config.UseSandbox.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("use_sandbox"),
 			"Unknown use_sandbox",
 			"The provider cannot create the NameCheap API client as there is an unknown configuration value for the"+
-				"NameCheap use_sandbox. Set the value statically in the configuration, or use the NAMECHEAP_USE_SANDBOX environment variable.",
+				"NameCheap use_sandbox. Set the value statically in the configuration, or use the "+
+				"NAMECHEAP_USE_SANDBOX environment variable.",
 		)
 	}
 
@@ -129,53 +139,18 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 
 	// Default values to environment variables, but override
 	// with Terraform configuration value if set.
-	var userName, apiUser, apiKey, clientIp string
+	var (
+		userName,
+		apiUser,
+		apiKey,
+		clientIp string
+	)
 
-	if !cred.UserName.IsNull() {
-		userName = cred.UserName.ValueString()
+	if !config.UserName.IsNull() {
+		userName = config.UserName.ValueString()
 	} else {
 		userName = os.Getenv("NAMECHEAP_USER_NAME")
 	}
-
-	if !cred.ApiUser.IsNull() {
-		apiUser = cred.ApiUser.ValueString()
-	} else {
-		apiUser = os.Getenv("NAMECHEAP_API_USER")
-	}
-
-	if !cred.ApiKey.IsNull() {
-		apiKey = cred.ApiKey.ValueString()
-	} else {
-		apiKey = os.Getenv("NAMECHEAP_API_KEY")
-	}
-
-	if !cred.ClientIp.IsNull() {
-		clientIp = cred.ClientIp.ValueString()
-	} else {
-		clientIp = os.Getenv("NAMECHEAP_CLIENT_IP")
-	}
-
-	var useSandbox bool
-	if !cred.UseSandbox.IsNull() {
-		useSandbox = cred.UseSandbox.ValueBool()
-	} else {
-		var err error
-		useSandbox, err = strconv.ParseBool(os.Getenv("NAMECHEAP_USE_SANDBOX"))
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("use_sandbox"),
-				"Missing NameCheap use_sandbox",
-				"The provider cannot create the NameCheap API client as there is a "+
-					"missing or empty value for the NameCheap API use_sandbox. Set the "+
-					"use_sandbox value in the configuration or use the NAMECHEAP_USE_SANDBOX "+
-					"environment variable. If either is already set, ensure the value "+
-					"is not empty.",
-			)
-		}
-	}
-
-	// If any of the expected configuration are missing, return
-	// errors with provider-specific guidance.
 	if userName == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("user_name"),
@@ -188,6 +163,11 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
+	if !config.ApiUser.IsNull() {
+		apiUser = config.ApiUser.ValueString()
+	} else {
+		apiUser = os.Getenv("NAMECHEAP_API_USER")
+	}
 	if apiUser == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_user"),
@@ -200,6 +180,11 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
+	if !config.ApiKey.IsNull() {
+		apiKey = config.ApiKey.ValueString()
+	} else {
+		apiKey = os.Getenv("NAMECHEAP_API_KEY")
+	}
 	if apiKey == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_key"),
@@ -212,6 +197,11 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
+	if !config.ClientIp.IsNull() {
+		clientIp = config.ClientIp.ValueString()
+	} else {
+		clientIp = os.Getenv("NAMECHEAP_CLIENT_IP")
+	}
 	if clientIp == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("client_ip"),
@@ -224,6 +214,26 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
+	var useSandbox bool
+	if !config.UseSandbox.IsNull() {
+		useSandbox = config.UseSandbox.ValueBool()
+	} else {
+		var err error
+		useSandbox, err = strconv.ParseBool(os.Getenv("NAMECHEAP_USE_SANDBOX"))
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("use_sandbox"),
+				"Missing NameCheap use_sandbox",
+				"The provider cannot create the NameCheap API client as there is a missing or empty value for the "+
+					"NameCheap API use_sandbox. Set the use_sandbox value in the configuration or use the "+
+					"NAMECHEAP_USE_SANDBOX environment variable. If either is already set, ensure the value "+
+					"is not empty.",
+			)
+		}
+	}
+
+	// If any of the expected configuration are missing, return
+	// errors with provider-specific guidance.
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -236,7 +246,7 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 		UseSandbox: useSandbox,
 	})
 
-	resp.ResourceData = client
+	resp.ResourceData = &client
 }
 
 func (p *namecheapProvider) DataSources(_ context.Context) []func() datasource.DataSource {

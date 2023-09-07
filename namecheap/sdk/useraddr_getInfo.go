@@ -3,6 +3,7 @@ package sdk
 import (
 	"encoding/xml"
 	"fmt"
+
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 )
 

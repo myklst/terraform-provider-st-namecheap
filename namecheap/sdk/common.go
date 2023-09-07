@@ -1,8 +1,9 @@
 package sdk
 
 import (
-	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 	"net/http"
+
+	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 
 	"github.com/cenkalti/backoff/v4"
 )

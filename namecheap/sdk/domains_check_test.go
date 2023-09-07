@@ -1,8 +1,9 @@
 package sdk
 
 import (
-	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 	"testing"
+
+	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 )
 
 func TestDomainsCheck(t *testing.T) {

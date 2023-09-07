@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	namecheap_provider "github.com/myklst/terraform-provider-st-namecheap/namecheap"
 	"os"
+
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+
+	provider "github.com/myklst/terraform-provider-st-namecheap/namecheap"
 )
 
 // Generate the Terraform provider documentation using `tfplugindocs`:
@@ -16,7 +18,7 @@ func main() {
 		providerAddress = "registry.terraform.io/myklst/st-namecheap"
 	}
 
-	providerserver.Serve(context.Background(), namecheap_provider.New, providerserver.ServeOpts{
+	providerserver.Serve(context.Background(), provider.New, providerserver.ServeOpts{
 		Address: providerAddress,
 	})
 }
