@@ -34,7 +34,7 @@ func DomainsReactivate(client *namecheap.Client, domains string, years string) (
 		"YearsToAdd": years,
 	}
 
-	_, err := DoXmlWithRetry(client, params, &response)
+	_, err := DoXmlWithBackoff(client, params, &response)
 
 	if err != nil {
 		return nil, err

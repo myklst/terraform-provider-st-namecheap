@@ -34,7 +34,7 @@ func UseraddrGetList(client *namecheap.Client) (*UseraddrGetListCommandResponse,
 		"Command": "namecheap.users.address.getList",
 	}
 
-	_, err := DoXmlWithRetry(client, params, &response)
+	_, err := DoXmlWithBackoff(client, params, &response)
 
 	if err != nil {
 		return nil, err

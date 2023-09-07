@@ -3,20 +3,24 @@ package sdk
 import (
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
 	"net/http"
+
+	"github.com/cenkalti/backoff/v4"
 )
 
-const RetryTimes int = 3
-
-func DoXmlWithRetry(client *namecheap.Client, body map[string]string, obj interface{}) (*http.Response, error) {
+func DoXmlWithBackoff(client *namecheap.Client, body map[string]string, obj interface{}) (*http.Response, error) {
 	var requestResponse *http.Response
 
-	var err error
-	for t := 0; t < RetryTimes; t++ {
+	operation := func() error {
+		var err error
 		requestResponse, err = client.DoXML(body, obj)
-		if err == nil {
-			return requestResponse, nil
-		}
+		return err
 	}
 
-	return nil, err
+	err := backoff.Retry(operation, backoff.NewExponentialBackOff())
+	if err != nil {
+
+		return nil, err
+	}
+
+	return requestResponse, nil
 }

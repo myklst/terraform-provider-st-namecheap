@@ -1,6 +1,7 @@
 module github.com/myklst/terraform-provider-st-namecheap
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/hashicorp/terraform-plugin-docs v0.16.0
 	github.com/hashicorp/terraform-plugin-framework v1.3.5
 	github.com/hashicorp/terraform-plugin-log v0.9.0

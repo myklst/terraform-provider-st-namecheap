@@ -34,7 +34,7 @@ func DomainsAvailable(client *namecheap.Client, domains string) (*DomainsCheckCo
 		"DomainList": domains,
 	}
 
-	_, err := DoXmlWithRetry(client, params, &response)
+	_, err := DoXmlWithBackoff(client, params, &response)
 
 	if err != nil {
 		return nil, err
