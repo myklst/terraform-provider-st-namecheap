@@ -2,7 +2,7 @@ terraform {
   required_providers {
     st-namecheap = {
       source = "myklst/st-namecheap"
-      version = "= 2.2.0"
+      version = "= 0.1.0"
     }
   }
 }
