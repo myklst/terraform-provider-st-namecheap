@@ -234,12 +234,12 @@ func (r *namecheapDomainResource) calculateMode(plan *namecheapDomainState) (str
 	req.SearchTerm = &domain
 	res, err := r.client.Domains.GetList(req)
 	if err != nil {
-		return "", DiagnosticErrorOf("domain [%s] doesn't exist", domain)
+		return "", DiagnosticErrorOf("domain [%s] doesn't exist", err, domain)
 	}
 
 	resName := *((*res.Domains)[0].Name)
 	if resName != domain {
-		return "", DiagnosticErrorOf("domain [%s] doesn't exist", domain)
+		return "", DiagnosticErrorOf("domain [%s] doesn't exist", nil, domain)
 	}
 
 	isExpired := *((*res.Domains)[0].IsExpired)
@@ -257,9 +257,14 @@ func (r *namecheapDomainResource) calculateMode(plan *namecheapDomainState) (str
 	return mode_skip, nil
 }
 
-func DiagnosticErrorOf(format string, a ...any) diag.Diagnostic {
+func DiagnosticErrorOf(format string, err error, a ...any) diag.Diagnostic {
 	msg := fmt.Sprintf(format, a)
-	return diag.NewErrorDiagnostic(msg, "")
+	if err != nil {
+		return diag.NewErrorDiagnostic(msg, err.Error())
+	} else {
+		return diag.NewErrorDiagnostic(msg, "")
+	}
+
 }
 
 func (r *namecheapDomainResource) renewDomain(ctx context.Context, domain string, years string) diag.Diagnostic {
@@ -270,7 +275,7 @@ func (r *namecheapDomainResource) renewDomain(ctx context.Context, domain string
 	if err != nil || *resp.Result.Renew == false {
 		log(ctx, "renew domain %s failed, exit", domain)
 		log(ctx, "reason:", err.Error())
-		return DiagnosticErrorOf("renew domain [%s] failed", domain)
+		return DiagnosticErrorOf("renew domain [%s] failed", err, domain)
 	}
 
 	log(ctx, "renew domain [%s] success", domain)
@@ -285,7 +290,7 @@ func (r *namecheapDomainResource) reactivateDomain(ctx context.Context, domain s
 	if err != nil || !*resp.Result.IsSuccess {
 		log(ctx, "reactivate domain %s failed, exit", domain)
 		log(ctx, "reason:", err.Error())
-		return DiagnosticErrorOf("reactivate domain [%s] failed", domain)
+		return DiagnosticErrorOf("reactivate domain [%s] failed", err, domain)
 	}
 
 	log(ctx, "reactivate domain [%s] success", domain)
@@ -298,7 +303,7 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 	//get domain info
 	_, err := client.Domains.GetInfo(domain)
 	if err == nil {
-		return DiagnosticErrorOf("domain [%s] has been created in this account", domain)
+		return DiagnosticErrorOf("domain [%s] has been created in this account", nil, domain)
 	}
 
 	//if domain does not exist, then create
@@ -312,7 +317,7 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 		if err != nil {
 			log(ctx, "get user Contacts failed, exit")
 			log(ctx, "reason:", err.Error())
-			return DiagnosticErrorOf("get user contacts failed, please check the contacts in the account manually", domain)
+			return DiagnosticErrorOf("get user contacts failed, please check the contacts in the account manually", err, domain)
 		}
 
 		log(ctx, "debug domain create", r)
@@ -322,12 +327,12 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 		if err != nil {
 			log(ctx, "create domain [%s] failed, exit", domain)
 			log(ctx, "reason:", err.Error())
-			return DiagnosticErrorOf("create domain [%s] failed", domain)
+			return DiagnosticErrorOf("create domain [%s] failed", nil, domain)
 		}
 
 	} else {
 		log(ctx, "domain [%s] is not available, exiting!", domain)
-		return DiagnosticErrorOf("domain [%s] is not available to register, you need to change to another domain", domain)
+		return DiagnosticErrorOf("domain [%s] is not available to register, you need to change to another domain", err, domain)
 	}
 
 	return nil
