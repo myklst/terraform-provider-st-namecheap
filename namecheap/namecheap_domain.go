@@ -65,12 +65,14 @@ func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaReq
 					"renewal is attempted. The default is `30`. A value of less than `0` means that the domain will " +
 					"never be renewed.",
 				Optional: true,
+				Computed: true,
 				Default:  int64default.StaticInt64(30),
 			},
 			"auto_renew_years": &schema.Int64Attribute{
 				MarkdownDescription: "Number of years to register and renew. The default is `1`. A value of less " +
 					"than `0` means that the domain will never be auto renewed.",
 				Optional: true,
+				Computed: true,
 				Default:  int64default.StaticInt64(1),
 			},
 		},
