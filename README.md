@@ -14,7 +14,6 @@ API) to this [whitelist admin page](https://ap.www.namecheap.com/settings/tools/
 Once you've done that, make note of the API key, your IP address, and your
 username to fill into our `provider` block.
 
-
 Supported Versions
 ------------------
 
@@ -50,9 +49,6 @@ Local Installation
         api_key     = "XXXX"
         client_ip   = "X.X.X.X"
         use_sandbox = false
-       
+
     }
     ```
-
-
-export TF_LOG=DEBUG

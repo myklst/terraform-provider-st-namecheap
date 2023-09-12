@@ -17,8 +17,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/myklst/terraform-provider-st-namecheap/namecheap/sdk"
 	"github.com/namecheap/go-namecheap-sdk/v2/namecheap"
+
+	"github.com/myklst/terraform-provider-st-namecheap/namecheap/sdk"
 )
 
 const (
