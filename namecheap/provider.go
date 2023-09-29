@@ -246,7 +246,7 @@ func (p *namecheapProvider) Configure(ctx context.Context, req provider.Configur
 		UseSandbox: useSandbox,
 	})
 
-	resp.ResourceData = &client
+	resp.ResourceData = client
 }
 
 func (p *namecheapProvider) DataSources(_ context.Context) []func() datasource.DataSource {
