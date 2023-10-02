@@ -163,7 +163,7 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	newMode, diag := r.calculateMode(plan)
+	newMode, diag := r.calculateMode(ctx, plan)
 	resp.Diagnostics.Append(diag)
 	if resp.Diagnostics.HasError() {
 		return
@@ -229,20 +229,26 @@ func (r *namecheapDomainResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("domain"), req, resp)
 }
 
-func (r *namecheapDomainResource) calculateMode(plan *namecheapDomainState) (string, diag.Diagnostic) {
+func (r *namecheapDomainResource) calculateMode(ctx context.Context, plan *namecheapDomainState) (string, diag.Diagnostic) {
 	domain := plan.Domain.ValueString()
 
-	var req *namecheap.DomainsGetListArgs
+	log(ctx, "calculateMode111")
+
+	var req namecheap.DomainsGetListArgs
+
 	req.SearchTerm = &domain
-	res, err := r.client.Domains.GetList(req)
+
+	res, err := r.client.Domains.GetList(&req)
 	if err != nil {
 		return "", DiagnosticErrorOf("domain [%s] doesn't exist", err, domain)
 	}
-
+	log(ctx, "calculateMode222")
 	resName := *((*res.Domains)[0].Name)
 	if resName != domain {
 		return "", DiagnosticErrorOf("domain [%s] doesn't exist", nil, domain)
 	}
+
+	log(ctx, "calculateMode333")
 
 	minDaysRemain := plan.MinDaysRemaining.ValueInt64()
 	if minDaysRemain <= 0 {
