@@ -69,11 +69,10 @@ func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaReq
 				Default:  int64default.StaticInt64(30),
 			},
 			"auto_renew_years": &schema.Int64Attribute{
-				MarkdownDescription: "Number of years to register and renew. The default is `1`. A value of less " +
-					"than `0` means that the domain will never be auto renewed.",
-				Optional: true,
-				Computed: true,
-				Default:  int64default.StaticInt64(1),
+				MarkdownDescription: "Number of years to register and renew. The default is `1`. The value must greater than 0 and less than or equal to 10",
+				Optional:            true,
+				Computed:            true,
+				Default:             int64default.StaticInt64(1),
 			},
 		},
 	}
@@ -245,12 +244,16 @@ func (r *namecheapDomainResource) calculateMode(plan *namecheapDomainState) (str
 		return "", DiagnosticErrorOf("domain [%s] doesn't exist", nil, domain)
 	}
 
+	minDaysRemain := plan.MinDaysRemaining.ValueInt64()
+	if minDaysRemain <= 0 {
+		return mode_skip, nil
+	}
+
 	isExpired := *((*res.Domains)[0].IsExpired)
 	if isExpired {
 		return mode_reactivate, nil
 	}
 
-	minDaysRemain := plan.MinDaysRemaining.ValueInt64()
 	expires := *((*res.Domains)[0].Expires)
 	diff := time.Until(expires.Time)
 	if int64(diff.Hours()) < minDaysRemain*24 {
@@ -330,7 +333,7 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 		if err != nil {
 			log(ctx, "create domain [%s] failed, exit", domain)
 			log(ctx, "reason:", err.Error())
-			return DiagnosticErrorOf("create domain [%s] failed", nil, domain)
+			return DiagnosticErrorOf("create domain [%s] failed", err, domain)
 		}
 
 	} else {
