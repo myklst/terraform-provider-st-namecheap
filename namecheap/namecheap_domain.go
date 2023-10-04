@@ -36,7 +36,7 @@ type namecheapDomainResource struct {
 type namecheapDomainState struct {
 	Domain           types.String `tfsdk:"domain"`
 	MinDaysRemaining types.Int64  `tfsdk:"min_days_remaining"`
-	Years            types.Int64  `tfsdk:"auto_renew_years"`
+	Years            types.Int64  `tfsdk:"purchase_years"`
 }
 
 func NewNamecheapDomainResource() resource.Resource {
@@ -68,8 +68,8 @@ func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaReq
 				Computed: true,
 				Default:  int64default.StaticInt64(30),
 			},
-			"auto_renew_years": &schema.Int64Attribute{
-				MarkdownDescription: "Number of years to register and renew. The default is `1`. The value must greater than 0 and less than or equal to 10",
+			"purchase_years": &schema.Int64Attribute{
+				MarkdownDescription: "Number of years to purchase and renew. The default is `1`. The value must greater than 0 and less than or equal to 10",
 				Optional:            true,
 				Computed:            true,
 				Default:             int64default.StaticInt64(1),
@@ -232,8 +232,6 @@ func (r *namecheapDomainResource) ImportState(ctx context.Context, req resource.
 func (r *namecheapDomainResource) calculateMode(ctx context.Context, plan *namecheapDomainState) (string, diag.Diagnostic) {
 	domain := plan.Domain.ValueString()
 
-	log(ctx, "calculateMode111")
-
 	var req namecheap.DomainsGetListArgs
 
 	req.SearchTerm = &domain
@@ -242,13 +240,11 @@ func (r *namecheapDomainResource) calculateMode(ctx context.Context, plan *namec
 	if err != nil {
 		return "", DiagnosticErrorOf("domain [%s] doesn't exist", err, domain)
 	}
-	log(ctx, "calculateMode222")
+
 	resName := *((*res.Domains)[0].Name)
 	if resName != domain {
 		return "", DiagnosticErrorOf("domain [%s] doesn't exist", nil, domain)
 	}
-
-	log(ctx, "calculateMode333")
 
 	minDaysRemain := plan.MinDaysRemaining.ValueInt64()
 	if minDaysRemain <= 0 {
