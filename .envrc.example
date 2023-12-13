@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+export NAMECHEAP_USER_NAME=""
+export NAMECHEAP_API_USER=""
+export NAMECHEAP_API_KEY=""
+export NAMECHEAP_CLIENT_IP=""
+export NAMECHEAP_USE_SANDBOX="true"
