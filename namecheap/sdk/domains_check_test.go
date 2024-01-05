@@ -20,6 +20,6 @@ func TestDomainsCheck(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	} else {
-		t.Log(*r.Result.Available)
+		t.Log(r.Result.Available)
 	}
 }

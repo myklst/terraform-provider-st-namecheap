@@ -263,7 +263,7 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 	// else, if domain does not exist, then create
 
 	resp, err := sdk.DomainsAvailable(client, domain)
-	if err == nil && *resp.Result.Available {
+	if err == nil && resp.Result.Available {
 		// no err and available, create
 		log(ctx, "Domain [%s] is available, Creating...", domain)
 
@@ -290,7 +290,7 @@ func (r *namecheapDomainResource) renewDomain(ctx context.Context, domain string
 	client := r.client
 	resp, err := sdk.DomainsRenew(client, domain, years)
 
-	if err != nil || !*resp.Result.Renew {
+	if err != nil || !resp.Result.Renew {
 		log(ctx, "renew domain %s failed, exit", domain)
 		log(ctx, "reason: %s", err.Error())
 		return diagnosticErrorOf(err, "renew domain [%s] failed", domain)
@@ -304,7 +304,7 @@ func (r *namecheapDomainResource) reactivateDomain(ctx context.Context, domain s
 	client := r.client
 	resp, err := sdk.DomainsReactivate(client, domain, years)
 
-	if err != nil || !*resp.Result.IsSuccess {
+	if err != nil || !resp.Result.IsSuccess {
 		log(ctx, "reactivate domain %s failed: %s", domain, err.Error())
 		return diagnosticErrorOf(err, "reactivate domain [%s] failed", domain)
 	}
