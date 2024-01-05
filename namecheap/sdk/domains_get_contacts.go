@@ -11,25 +11,25 @@ import (
 var cache *domainsGetContactsCommandResponse
 
 type contact struct {
-	OrganizationName    *string `xml:"OrganizationName"`
-	JobTitle            *string `xml:"JobTitle"`
-	FirstName           *string `xml:"FirstName"`
-	LastName            *string `xml:"LastName"`
-	Address1            *string `xml:"Address1"`
-	Address2            *string `xml:"Address2"`
-	City                *string `xml:"City"`
-	StateProvince       *string `xml:"StateProvince"`
-	StateProvinceChoice *string `xml:"StateProvinceChoice"`
-	PostalCode          *string `xml:"PostalCode"`
-	Country             *string `xml:"Country"`
-	Phone               *string `xml:"Phone"`
-	Fax                 *string `xml:"Fax"`
-	EmailAddress        *string `xml:"EmailAddress"`
-	PhoneExt            *string `xml:"PhoneExt"`
+	OrganizationName    string `xml:"OrganizationName"`
+	JobTitle            string `xml:"JobTitle"`
+	FirstName           string `xml:"FirstName"`
+	LastName            string `xml:"LastName"`
+	Address1            string `xml:"Address1"`
+	Address2            string `xml:"Address2"`
+	City                string `xml:"City"`
+	StateProvince       string `xml:"StateProvince"`
+	StateProvinceChoice string `xml:"StateProvinceChoice"`
+	PostalCode          string `xml:"PostalCode"`
+	Country             string `xml:"Country"`
+	Phone               string `xml:"Phone"`
+	Fax                 string `xml:"Fax"`
+	EmailAddress        string `xml:"EmailAddress"`
+	PhoneExt            string `xml:"PhoneExt"`
 }
 
 type domainsContactsResult struct {
-	Domain     *string  `xml:"Domain,attr"`
+	Domain     string  `xml:"Domain,attr"`
 	Registrant *contact `xml:"Registrant"`
 	Tech       *contact `xml:"Tech"`
 	Admin      *contact `xml:"Admin"`
@@ -43,8 +43,8 @@ type domainsGetContactsCommandResponse struct {
 type domainsGetContactsResponse struct {
 	XMLName *xml.Name `xml:"ApiResponse"`
 	Errors  *[]struct {
-		Message *string `xml:",chardata"`
-		Number  *string `xml:"Number,attr"`
+		Message string `xml:",chardata"`
+		Number  string `xml:"Number,attr"`
 	} `xml:"Errors>Error"`
 	CommandResponse *domainsGetContactsCommandResponse `xml:"CommandResponse"`
 }
@@ -72,7 +72,7 @@ func DomainsGetContacts(client *namecheap.Client) (*domainsGetContactsCommandRes
 
 		if response.Errors != nil && len(*response.Errors) > 0 {
 			apiErr := (*response.Errors)[0]
-			return nil, fmt.Errorf("%s (%s)", *apiErr.Message, *apiErr.Number)
+			return nil, fmt.Errorf("%s (%s)", apiErr.Message, apiErr.Number)
 		}
 
 		cache = response.CommandResponse
