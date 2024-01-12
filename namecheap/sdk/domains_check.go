@@ -10,6 +10,7 @@ import (
 type domainsCheckResult struct {
 	Domain    string `xml:"Domain,attr"`
 	Available bool   `xml:"Available,attr"`
+	Price     string `xml:"PremiumRegistrationPrice,attr"`
 }
 
 type domainsCheckResponse struct {

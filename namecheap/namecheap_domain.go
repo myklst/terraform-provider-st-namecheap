@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -33,9 +34,11 @@ type namecheapDomainResource struct {
 }
 
 type namecheapDomainState struct {
-	Domain           types.String `tfsdk:"domain"`
-	MinDaysRemaining types.Int64  `tfsdk:"min_days_remaining"`
-	Years            types.Int64  `tfsdk:"purchase_years"`
+	Domain           types.String  `tfsdk:"domain"`
+	Nameservers      types.List    `tfsdk:"nameservers"`
+	MaxPrice         types.Float64 `tfsdk:"max_price"`
+	MinDaysRemaining types.Int64   `tfsdk:"min_days_remaining"`
+	Years            types.Int64   `tfsdk:"purchase_years"`
 }
 
 func NewNamecheapDomainResource() resource.Resource {
@@ -58,6 +61,15 @@ func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+			},
+			"nameservers": &schema.ListAttribute{
+				Description: "Nameservers for the domain",
+				Required:    true,
+				ElementType: types.StringType,
+			},
+			"max_price": &schema.Float64Attribute{
+				Description: "Maximum price of the purchase domain",
+				Required:    true,
 			},
 			"min_days_remaining": &schema.Int64Attribute{
 				MarkdownDescription: "The minimum amount of days remaining on the expiration of a domain before a " +
@@ -103,8 +115,13 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 
 	domain := plan.Domain.ValueString()
 	years := plan.Years.ValueInt64()
+	maxprice := plan.MaxPrice.ValueFloat64()
+	var nameservers string
+	for _, x := range plan.Nameservers.Elements() {
+		nameservers += strings.Trim(x.String(), "\"") + ","
+	}
 
-	d1 := r.createDomain(ctx, domain, strconv.FormatInt(years, 10))
+	d1 := r.createDomain(ctx, domain, strconv.FormatInt(years, 10), nameservers, maxprice)
 	resp.Diagnostics.Append(d1)
 	if resp.Diagnostics.HasError() {
 		return
@@ -113,7 +130,9 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 	state := namecheapDomainState{
 		Domain:           plan.Domain,
 		Years:            plan.Years,
+		MaxPrice:         plan.MaxPrice,
 		MinDaysRemaining: plan.MinDaysRemaining,
+		Nameservers:      plan.Nameservers,
 	}
 	d2 := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(d2...)
@@ -132,7 +151,8 @@ func (r *namecheapDomainResource) Read(ctx context.Context, req resource.ReadReq
 	}
 
 	domain := state.Domain.ValueString()
-	if _, err := r.client.Domains.GetInfo(domain); err != nil {
+	getResp, err := r.client.Domains.GetInfo(domain)
+	if err != nil {
 		if strings.Contains(err.Error(), "Domain is invalid") {
 			resp.State.RemoveResource(ctx)
 		} else {
@@ -140,6 +160,13 @@ func (r *namecheapDomainResource) Read(ctx context.Context, req resource.ReadReq
 		}
 		return
 	}
+
+	nameserver := []attr.Value{}
+	for _, x := range *getResp.DomainDNSGetListResult.DnsDetails.Nameservers {
+		nameserver = append(nameserver, types.StringValue(x))
+	}
+
+	state.Nameservers = types.ListValueMust(types.StringType, nameserver)
 
 	d1 := resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(d1...)
@@ -167,6 +194,15 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 
 	newDomain := plan.Domain.ValueString()
 	newYear := plan.Years.ValueInt64()
+	var nameservers []string
+	for _, x := range plan.Nameservers.Elements() {
+		nameservers = append(nameservers, strings.Trim(x.String(), "\""))
+	}
+
+	_, err := r.client.DomainsDNS.SetCustom(plan.Domain.ValueString(), nameservers)
+	if err != nil {
+		resp.Diagnostics.AddError("Set nameserver failed error ", err.Error())
+	}
 
 	switch newMode {
 	case mode_renew:
@@ -192,7 +228,9 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 	state := namecheapDomainState{
 		Domain:           plan.Domain,
 		Years:            plan.Years,
+		MaxPrice:         plan.MaxPrice,
 		MinDaysRemaining: plan.MinDaysRemaining,
+		Nameservers:      plan.Nameservers,
 	}
 	setStateDiags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(setStateDiags...)
@@ -254,29 +292,57 @@ func (r *namecheapDomainResource) calculateMode(ctx context.Context, plan *namec
 	return mode_skip, nil
 }
 
-func (r *namecheapDomainResource) createDomain(ctx context.Context, domain string, years string) diag.Diagnostic {
+func (r *namecheapDomainResource) createDomain(ctx context.Context, domain string, years string, nameservers string, maxprice float64) diag.Diagnostic {
 	client := r.client
 	// Get domain info
 	if _, err := client.Domains.GetInfo(domain); err == nil {
 		return diagnosticErrorOf(nil, "domain [%s] has been created in this account", domain)
 	}
-	// else, if domain does not exist, then create
 
+	// else, if domain does not exist, check for pricing then create
 	resp, err := sdk.DomainsAvailable(client, domain)
 	if err == nil && resp.Result.Available {
-		// no err and available, create
-		log(ctx, "Domain [%s] is available, Creating...", domain)
+		// Check domain price before proceed
+		product := strings.Split(domain, ".")
+		var price float64
 
-		r, err := r.getUserAccountContact()
-		if err != nil {
-			log(ctx, "get user contacts failed: %s", err.Error())
-			return diagnosticErrorOf(err, "get user contacts failed: %s", domain)
+		// Check if the domain is a premium domain
+		if resp.Result.Price != "0" {
+			price, err = strconv.ParseFloat(resp.Result.Price, 32)
+			if err != nil {
+				return diagnosticErrorOf(err, "get domain price failed: %s", domain)
+			}
+		} else { //Do a normal price query on the target domain
+			priceResp, err := sdk.UserGetPricing(client, "register", product[len(product)-1])
+			if err != nil {
+				for _, s := range priceResp.Result.ProductCategory.Price {
+					if s.Duration == years {
+						if price, err = strconv.ParseFloat(s.Price, 32); err != nil {
+							return diagnosticErrorOf(err, "get domain price failed: %s", domain)
+						}
+					}
+				}
+			}
 		}
 
-		_, err = sdk.DomainsCreate(client, domain, years, r)
-		if err != nil {
-			log(ctx, "create domain [%s] failed: %s", domain, err.Error())
-			return diagnosticErrorOf(err, "create domain [%s] failed", domain)
+		if price <= maxprice {
+			// no err, price ok and available, create
+			log(ctx, "Domain [%s] is available, Creating...", domain)
+
+			r, err := r.getUserAccountContact()
+			if err != nil {
+				log(ctx, "get user contacts failed: %s", err.Error())
+				return diagnosticErrorOf(err, "get user contacts failed: %s", domain)
+			}
+
+			_, err = sdk.DomainsCreate(client, domain, years, nameservers, r)
+			if err != nil {
+				log(ctx, "create domain [%s] failed: %s", domain, err.Error())
+				return diagnosticErrorOf(err, "create domain [%s] failed", domain)
+			}
+		} else {
+			log(ctx, "domain [%s] is overprice, exiting!", domain)
+			return diagnosticErrorOf(err, "domain [%s] is overprice [%f], you need to change to another domain", domain, price)
 		}
 	} else {
 		log(ctx, "domain [%s] is not available, exiting!", domain)
