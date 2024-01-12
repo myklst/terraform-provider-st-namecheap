@@ -303,7 +303,6 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 	resp, err := sdk.DomainsAvailable(client, domain)
 	if err == nil && resp.Result.Available {
 		// Check domain price before proceed
-		product := strings.Split(domain, ".")
 		var price float64
 
 		// Check if the domain is a premium domain
@@ -313,7 +312,12 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 				return diagnosticErrorOf(err, "get domain price failed: %s", domain)
 			}
 		} else { //Do a normal price query on the target domain
-			priceResp, err := sdk.UserGetPricing(client, "register", product[len(product)-1])
+			parsedDomain, err := namecheap.ParseDomain(domain)
+			if err != nil {
+				return diagnosticErrorOf(err, "parsed domain failed: %s", err)
+			}
+
+			priceResp, err := sdk.UserGetPricing(client, "register", parsedDomain.TLD)
 			if err != nil {
 				for _, s := range priceResp.Result.ProductCategory.Price {
 					if s.Duration == years {
