@@ -26,7 +26,7 @@ type domainsCreateResponse struct {
 	CommandResponse *domainsCreateCommandResponse `xml:"CommandResponse"`
 }
 
-func DomainsCreate(client *namecheap.Client, domainName string, years string, info *UserAddrGetInfoCommandResponse) (*domainsCreateCommandResponse, error) {
+func DomainsCreate(client *namecheap.Client, domainName string, years string, nameservers string, info *UserAddrGetInfoCommandResponse) (*domainsCreateCommandResponse, error) {
 	var response domainsCreateResponse
 
 	params := map[string]string{
@@ -79,7 +79,7 @@ func DomainsCreate(client *namecheap.Client, domainName string, years string, in
 		"AuxBillingEmailAddress":  info.Result.EmailAddress,
 
 		"Extended attributes": "",
-		"Nameservers":         "",
+		"Nameservers":         nameservers,
 	}
 	if _, err := doXmlWithBackoff(client, params, &response); err != nil {
 		return nil, err
