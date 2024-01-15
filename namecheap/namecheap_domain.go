@@ -311,13 +311,8 @@ func (r *namecheapDomainResource) createDomain(ctx context.Context, domain strin
 			if err != nil {
 				return diagnosticErrorOf(err, "get domain price failed: %s", domain)
 			}
-		} else { //Do a normal price query on the target domain
-			parsedDomain, err := namecheap.ParseDomain(domain)
-			if err != nil {
-				return diagnosticErrorOf(err, "parsed domain failed: %s", err)
-			}
-
-			priceResp, err := sdk.UserGetPricing(client, "register", parsedDomain.TLD)
+		} else { //Do a normal price query on the target TLD
+			priceResp, err := sdk.UserGetPricing(client, "register", domain)
 			if err == nil {
 				for _, s := range priceResp.Result.ProductCategory.Price {
 					if s.Duration == years {

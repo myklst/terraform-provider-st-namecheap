@@ -31,14 +31,18 @@ type userGetPricingResponse struct {
 	CommandResponse *userGetPricingCommandResponse `xml:"CommandResponse"`
 }
 
-func UserGetPricing(client *namecheap.Client, action string, product string) (*userGetPricingCommandResponse, error) {
+func UserGetPricing(client *namecheap.Client, action string, domain string) (*userGetPricingCommandResponse, error) {
 	var response userGetPricingResponse
+	parsedDomain, err := namecheap.ParseDomain(domain)
+	if err != nil {
+		return nil, err
+	}
 
 	params := map[string]string{
 		"Command": "namecheap.users.getPricing",
 		"ProductType": "DOMAIN",
 		"ActionName" : action,
-		"ProductName": product,
+		"ProductName": parsedDomain.TLD,
 	}
 	if _, err := doXmlWithBackoff(client, params, &response); err != nil {
 		return nil, err
