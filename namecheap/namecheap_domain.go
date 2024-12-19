@@ -178,12 +178,39 @@ func (r *namecheapDomainResource) Read(ctx context.Context, req resource.ReadReq
 	}
 	state.Nameservers = types.ListValueMust(types.StringType, nameserver)
 
-	expiry_date, _err := r.getDomainExpiry(domain)
+	domainRemainingDays, _err := r.getDomainExpiry(domain)
 	if _err != nil {
 		resp.Diagnostics.Append(_err)
 		return
 	}
-	state.DomainRemainingDays = types.Int64Value(expiry_date)
+	state.DomainRemainingDays = types.Int64Value(domainRemainingDays)
+
+	// Attempt to renew domain if the DomainRemainingDays is lesser or equal to MinDaysRemaining
+	if domainRemainingDays <= state.MinDaysRemaining.ValueInt64() {
+		renewYear := state.Years.ValueInt64()
+		newMode, diag := r.calculateMode(domain)
+		resp.Diagnostics.Append(diag)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		switch newMode {
+		case MODE_RENEW:
+			resp.Diagnostics.Append(r.renewDomain(ctx, domain, strconv.FormatInt(renewYear, 10)))
+		case MODE_REACTIVATE:
+			resp.Diagnostics.Append(r.reactivateDomain(ctx, domain, strconv.FormatInt(renewYear, 10)))
+		default:
+			resp.Diagnostics.AddError("Invalid mode value", newMode)
+		}
+
+		// Refresh expiry date after renewal
+		newDomainRemainingDays, err := r.getDomainExpiry(domain)
+		if err != nil {
+			resp.Diagnostics.Append(err)
+			return
+		}
+		state.DomainRemainingDays = types.Int64Value(newDomainRemainingDays)
+	}
 
 	d1 := resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(d1...)
