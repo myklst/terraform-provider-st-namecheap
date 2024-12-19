@@ -257,6 +257,7 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 		resp.Diagnostics.AddError("Set nameserver failed error ", _err.Error())
 	}
 
+	// Update state with the new expiry date
 	newDomainRemainingDays, err := r.getDomainExpiry(plan.Domain.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(err)
