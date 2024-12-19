@@ -242,7 +242,7 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 				return
 			}
 		default:
-			resp.Diagnostics.AddError("invalid mode value", newMode)
+			resp.Diagnostics.AddError("Invalid mode value", newMode)
 			return
 		}
 	}
@@ -283,7 +283,7 @@ func (r *namecheapDomainResource) Delete(ctx context.Context, req resource.Delet
 
 	domain := state.Domain.ValueString()
 	// Since domain can not be deleted in NameCheap, so we do nothing here but give a warning
-	msg := fmt.Sprintf("Since domain can not be deleted in NameCheap, %s still exist actually", domain)
+	msg := fmt.Sprintf("Since domain can not be deleted in NameCheap, [%s] still exist actually", domain)
 	tflog.Warn(ctx, msg)
 }
 
