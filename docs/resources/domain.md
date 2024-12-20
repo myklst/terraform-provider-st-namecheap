@@ -18,8 +18,14 @@ Manage a domain in NameCheap
 ### Required
 
 - `domain` (String) Domain name to manage in NameCheap
+- `max_price` (Number) Maximum price of the purchase domain
+- `nameservers` (List of String) Nameservers for the domain
 
 ### Optional
 
 - `min_days_remaining` (Number) The minimum amount of days remaining on the expiration of a domain before a renewal is attempted. The default is `30`. A value of less than `0` means that the domain will never be renewed.
 - `purchase_years` (Number) Number of years to purchase and renew. The default is `1`. The value must greater than 0 and less than or equal to 10
+
+### Read-Only
+
+- `domain_remaining_days` (Number) Domain remaining days before expired.
