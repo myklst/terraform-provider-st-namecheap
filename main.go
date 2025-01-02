@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 
@@ -10,18 +11,25 @@ import (
 	provider "github.com/myklst/terraform-provider-st-namecheap/namecheap"
 )
 
-// Generate the Terraform provider documentation using `tfplugindocs`:
-//
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 func main() {
+	var debug bool
+
+	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
+	flag.Parse()
+
 	providerAddress := os.Getenv("PROVIDER_LOCAL_PATH")
 	if providerAddress == "" {
 		providerAddress = "registry.terraform.io/myklst/st-namecheap"
 	}
 
-	if err := providerserver.Serve(context.Background(), provider.New, providerserver.ServeOpts{
+	opts := providerserver.ServeOpts{
 		Address: providerAddress,
-	}); err != nil {
-		log.Fatalln("Failed to start provider server")
+		Debug:   true,
+	}
+
+	err := providerserver.Serve(context.Background(), provider.New, opts)
+
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 }
