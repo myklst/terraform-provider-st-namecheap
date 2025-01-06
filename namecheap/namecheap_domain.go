@@ -355,9 +355,6 @@ func (r *namecheapDomainResource) ModifyPlan(ctx context.Context, req resource.M
 
 		resp.Diagnostics.Append(setDomainExpiryDate...)
 		resp.Diagnostics.Append(setRequiredRenew...)
-	} else {
-		setRequiredRenew := resp.Plan.SetAttribute(ctx, path.Root("required_renew"), types.BoolValue(false))
-		resp.Diagnostics.Append(setRequiredRenew...)
 	}
 
 	if resp.Diagnostics.HasError() {
