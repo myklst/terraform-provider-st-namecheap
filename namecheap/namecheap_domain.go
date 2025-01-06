@@ -80,14 +80,10 @@ func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaReq
 					"renewal is attempted. The default is `30`. A value of less than `0` means that the domain will " +
 					"never be renewed.",
 				Optional: true,
-				// Computed: true,
-				// Default:  int64default.StaticInt64(30),
 			},
 			"purchase_years": &schema.Int64Attribute{
 				MarkdownDescription: "Number of years to purchase and renew. The default is `1`. The value must greater than 0 and less than or equal to 10",
 				Optional:            true,
-				// Computed:            true,
-				// Default:             int64default.StaticInt64(1),
 			},
 			"domain_expiry_date": &schema.StringAttribute{
 				MarkdownDescription: "The expiry date of the domain, stored in ISO 8601 format (e.g., `2024-12-30T14:59:59Z`). This field is computed automatically based on the domain's expiration date.",
