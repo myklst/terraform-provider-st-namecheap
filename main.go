@@ -28,7 +28,7 @@ func main() {
 	// To enable debug mode, set `Debug` to true
 	opts := providerserver.ServeOpts{
 		Address: providerAddress,
-		Debug:   true,
+		Debug:   false,
 	}
 
 	err := providerserver.Serve(context.Background(), provider.New, opts)
