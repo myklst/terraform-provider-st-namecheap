@@ -27,10 +27,6 @@ const (
 	MODE_REACTIVATE string = "reactivate"
 )
 
-var (
-	_ resource.ResourceWithModifyPlan = &namecheapDomainResource{}
-)
-
 type namecheapDomainResource struct {
 	client *namecheap.Client
 }
