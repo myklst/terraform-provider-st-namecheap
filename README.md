@@ -56,3 +56,8 @@ Local Installation
       use_sandbox = false
     }
     ```
+
+Why Custom Provider
+-------------------
+
+Namecheap does not support managing resources with Terraform.

@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -23,10 +23,8 @@ import (
 )
 
 const (
-	mode_create     = "create"
-	mode_renew      = "renew"
-	mode_reactivate = "reactivate"
-	mode_skip       = "skip"
+	MODE_RENEW      string = "renew"
+	MODE_REACTIVATE string = "reactivate"
 )
 
 type namecheapDomainResource struct {
@@ -39,6 +37,8 @@ type namecheapDomainState struct {
 	MaxPrice         types.Float64 `tfsdk:"max_price"`
 	MinDaysRemaining types.Int64   `tfsdk:"min_days_remaining"`
 	Years            types.Int64   `tfsdk:"purchase_years"`
+	DomainExpiryDate types.String  `tfsdk:"domain_expiry_date"`
+	RequiredRenew    types.Bool    `tfsdk:"required_renew"`
 }
 
 func NewNamecheapDomainResource() resource.Resource {
@@ -56,42 +56,45 @@ func (r *namecheapDomainResource) Schema(_ context.Context, _ resource.SchemaReq
 		Description: "Manage a domain in NameCheap",
 		Attributes: map[string]schema.Attribute{
 			"domain": &schema.StringAttribute{
-				Description: "Domain name to manage in NameCheap",
-				Required:    true,
+				MarkdownDescription: "Domain name to manage in NameCheap",
+				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"nameservers": &schema.ListAttribute{
-				Description: "Nameservers for the domain",
-				Required:    true,
-				ElementType: types.StringType,
+				MarkdownDescription: "Nameservers for the domain",
+				Required:            true,
+				ElementType:         types.StringType,
 			},
 			"max_price": &schema.Float64Attribute{
-				Description: "Maximum price of the purchase domain",
-				Required:    true,
+				MarkdownDescription: "Maximum price of the purchase domain",
+				Required:            true,
 			},
 			"min_days_remaining": &schema.Int64Attribute{
 				MarkdownDescription: "The minimum amount of days remaining on the expiration of a domain before a " +
 					"renewal is attempted. The default is `30`. A value of less than `0` means that the domain will " +
 					"never be renewed.",
 				Optional: true,
-				Computed: true,
-				Default:  int64default.StaticInt64(30),
 			},
 			"purchase_years": &schema.Int64Attribute{
 				MarkdownDescription: "Number of years to purchase and renew. The default is `1`. The value must greater than 0 and less than or equal to 10",
 				Optional:            true,
+			},
+			"domain_expiry_date": &schema.StringAttribute{
+				MarkdownDescription: "The expiry date of the domain, stored in ISO 8601 format (e.g., `2024-12-30T14:59:59Z`). This field is computed automatically based on the domain's expiration date.",
 				Computed:            true,
-				Default:             int64default.StaticInt64(1),
+			},
+			"required_renew": &schema.BoolAttribute{
+				MarkdownDescription: "A boolean flag to keep track of whether domain renewal action is required. ",
+				Computed:            true,
 			},
 		},
 	}
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *namecheapDomainResource) Configure(_ context.Context,
-	req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *namecheapDomainResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		// this data available on apply stage
 		return
@@ -121,9 +124,20 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 		nameservers += strings.Trim(x.String(), "\"") + ","
 	}
 
-	d1 := r.createDomain(ctx, domain, strconv.FormatInt(years, 10), nameservers, maxprice)
-	resp.Diagnostics.Append(d1)
-	if resp.Diagnostics.HasError() {
+	createDomain := func() error {
+		d1 := r.createDomain(ctx, domain, strconv.FormatInt(years, 10), nameservers, maxprice)
+		resp.Diagnostics.Append(d1)
+		if resp.Diagnostics.HasError() {
+			return fmt.Errorf("domain creation failed: %v", resp.Diagnostics)
+		}
+		return nil
+	}
+
+	reconnectBackoff := backoff.NewExponentialBackOff()
+	reconnectBackoff.MaxElapsedTime = 30 * time.Second
+	err := backoff.Retry(createDomain, reconnectBackoff)
+	if err != nil {
+		resp.Diagnostics.Append(diagnosticErrorOf(err, "domain [%s] creation failed after retries", domain))
 		return
 	}
 
@@ -134,6 +148,17 @@ func (r *namecheapDomainResource) Create(ctx context.Context, req resource.Creat
 		MinDaysRemaining: plan.MinDaysRemaining,
 		Nameservers:      plan.Nameservers,
 	}
+
+	// Compute `domainExpiryDate` and `domainExpiryRemainingDays` to get the expiration date and
+	// remaining active days of the domain.
+	domainExpiryDate, _err := r.getDomainExpiryDate(plan.Domain.ValueString())
+	if _err != nil {
+		resp.Diagnostics.Append(_err)
+		return
+	}
+	state.DomainExpiryDate = types.StringValue(domainExpiryDate.Format("2006-01-02T15:04:05Z"))
+	state.RequiredRenew = types.BoolValue(false)
+
 	d2 := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(d2...)
 	if resp.Diagnostics.HasError() {
@@ -165,8 +190,14 @@ func (r *namecheapDomainResource) Read(ctx context.Context, req resource.ReadReq
 	for _, x := range *getResp.DomainDNSGetListResult.DnsDetails.Nameservers {
 		nameserver = append(nameserver, types.StringValue(x))
 	}
-
 	state.Nameservers = types.ListValueMust(types.StringType, nameserver)
+
+	domainExpiryDate, _err := r.getDomainExpiryDate(domain)
+	if _err != nil {
+		resp.Diagnostics.Append(_err)
+		return
+	}
+	state.DomainExpiryDate = types.StringValue(domainExpiryDate.Format("2006-01-02T15:04:05Z"))
 
 	d1 := resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(d1...)
@@ -184,46 +215,6 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	newMode, diag := r.calculateMode(ctx, plan)
-	resp.Diagnostics.Append(diag)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	log(ctx, "CalculateMode result = %s", newMode)
-
-	newDomain := plan.Domain.ValueString()
-	newYear := plan.Years.ValueInt64()
-	var nameservers []string
-	for _, x := range plan.Nameservers.Elements() {
-		nameservers = append(nameservers, strings.Trim(x.String(), "\""))
-	}
-
-	_, err := r.client.DomainsDNS.SetCustom(plan.Domain.ValueString(), nameservers)
-	if err != nil {
-		resp.Diagnostics.AddError("Set nameserver failed error ", err.Error())
-	}
-
-	switch newMode {
-	case mode_renew:
-		diag := r.renewDomain(ctx, newDomain, strconv.FormatInt(newYear, 10))
-		resp.Diagnostics.Append(diag)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	case mode_reactivate:
-		diag := r.reactivateDomain(ctx, newDomain, strconv.FormatInt(newYear, 10))
-		resp.Diagnostics.Append(diag)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	case mode_skip:
-
-	default:
-		resp.Diagnostics.AddError("invalid mode value", newMode)
-		return
-	}
-
 	// Set state
 	state := namecheapDomainState{
 		Domain:           plan.Domain,
@@ -232,6 +223,69 @@ func (r *namecheapDomainResource) Update(ctx context.Context, req resource.Updat
 		MinDaysRemaining: plan.MinDaysRemaining,
 		Nameservers:      plan.Nameservers,
 	}
+
+	// Compute `domainExpiryDate` and `domainExpiryRemainingDays` to get the expiration date and
+	// remaining active days of the domain.
+	domainExpiryDate, err := r.getDomainExpiryDate(plan.Domain.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(err)
+		return
+	}
+
+	// Calculate domain active remaining days
+	domainExpiryRemainingDays := calcDomainRemainingDays(domainExpiryDate)
+
+	// Attempt to renew / reactivate domain if the `DomainRemainingDays` is lesser or equal to `MinDaysRemaining`
+	if domainExpiryRemainingDays <= plan.MinDaysRemaining.ValueInt64() {
+		domain := plan.Domain.ValueString()
+		renewYear := plan.Years.ValueInt64()
+
+		newMode, diag := r.calculateMode(domain)
+		resp.Diagnostics.Append(diag)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		switch newMode {
+		case MODE_RENEW:
+			diag := r.renewDomain(ctx, domain, strconv.FormatInt(renewYear, 10))
+			resp.Diagnostics.Append(diag)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		case MODE_REACTIVATE:
+			diag := r.reactivateDomain(ctx, domain, strconv.FormatInt(renewYear, 10))
+			resp.Diagnostics.Append(diag)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+		default:
+			resp.Diagnostics.AddError("Invalid mode value", newMode)
+			return
+		}
+
+		// Update and refresh expiration details after domain renewal / reactivate is done.
+		domainExpiryDate, err = r.getDomainExpiryDate(plan.Domain.ValueString())
+		if err != nil {
+			resp.Diagnostics.Append(err)
+			return
+		}
+	}
+
+	// Update and refresh state for attributes `domainExpiryDate` & `domainExpirationDays`
+	state.DomainExpiryDate = types.StringValue(domainExpiryDate.Format("2006-01-02T15:04:05Z"))
+	state.RequiredRenew = types.BoolValue(false)
+
+	// Configure nameservers
+	var nameservers []string
+	for _, x := range plan.Nameservers.Elements() {
+		nameservers = append(nameservers, strings.Trim(x.String(), "\""))
+	}
+	_, _err := r.client.DomainsDNS.SetCustom(plan.Domain.ValueString(), nameservers)
+	if _err != nil {
+		resp.Diagnostics.AddError("Set nameserver failed error ", _err.Error())
+	}
+
 	setStateDiags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(setStateDiags...)
 	if resp.Diagnostics.HasError() {
@@ -249,8 +303,9 @@ func (r *namecheapDomainResource) Delete(ctx context.Context, req resource.Delet
 	}
 
 	domain := state.Domain.ValueString()
+
 	// Since domain can not be deleted in NameCheap, so we do nothing here but give a warning
-	msg := fmt.Sprintf("Since domain can not be deleted in NameCheap, %s still exist actually", domain)
+	msg := fmt.Sprintf("Since domain can not be deleted in NameCheap, [%s] still exist actually", domain)
 	tflog.Warn(ctx, msg)
 }
 
@@ -259,8 +314,49 @@ func (r *namecheapDomainResource) ImportState(ctx context.Context, req resource.
 	resource.ImportStatePassthroughID(ctx, path.Root("domain"), req, resp)
 }
 
-func (r *namecheapDomainResource) calculateMode(ctx context.Context, plan *namecheapDomainState) (string, diag.Diagnostic) {
-	domain := plan.Domain.ValueString()
+func (r *namecheapDomainResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if !req.Plan.Raw.IsNull() {
+		var plan *namecheapDomainState
+		resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var plan namecheapDomainState
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+
+	requiresRenew, err := isDomainRequiredRenew(plan.MinDaysRemaining.ValueInt64(), plan.DomainExpiryDate.ValueString())
+	if err != nil {
+		return
+	}
+
+	// Enforce update lifecycle if domain is required to renew
+	if requiresRenew {
+		plan.DomainExpiryDate = types.StringUnknown()
+		plan.RequiredRenew = types.BoolUnknown()
+
+		setDomainExpiryDate := resp.Plan.SetAttribute(ctx, path.Root("domain_expiry_date"), types.StringUnknown())
+		setRequiredRenew := resp.Plan.SetAttribute(ctx, path.Root("required_renew"), types.BoolUnknown())
+
+		resp.Diagnostics.Append(setDomainExpiryDate...)
+		resp.Diagnostics.Append(setRequiredRenew...)
+	}
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Plan.Set(ctx, plan)
+}
+
+func (r *namecheapDomainResource) calculateMode(domain string) (string, diag.Diagnostic) {
 	res, err := r.client.Domains.GetList(&namecheap.DomainsGetListArgs{
 		SearchTerm: &domain,
 	})
@@ -273,23 +369,12 @@ func (r *namecheapDomainResource) calculateMode(ctx context.Context, plan *namec
 		return "", diagnosticErrorOf(nil, "domain [%s] doesn't exist", domain)
 	}
 
-	minDaysRemain := plan.MinDaysRemaining.ValueInt64()
-	if minDaysRemain <= 0 {
-		return mode_skip, nil
-	}
-
 	isExpired := *((*res.Domains)[0].IsExpired)
 	if isExpired {
-		return mode_reactivate, nil
+		return MODE_REACTIVATE, nil
 	}
 
-	expires := *((*res.Domains)[0].Expires)
-	diff := time.Until(expires.Time)
-	if int64(diff.Hours())/24 < minDaysRemain {
-		return mode_renew, nil
-	}
-
-	return mode_skip, nil
+	return MODE_RENEW, nil
 }
 
 func (r *namecheapDomainResource) createDomain(ctx context.Context, domain string, years string, nameservers string, maxprice float64) diag.Diagnostic {
@@ -400,6 +485,53 @@ func (r *namecheapDomainResource) getUserAccountContact() (*sdk.UserAddrGetInfoC
 	}
 
 	return r2, nil
+}
+
+func (r *namecheapDomainResource) getDomainExpiryDate(domain string) (time.Time, diag.Diagnostic) {
+	var domainExpiryDate time.Time
+	var err error
+
+	getDomainExpiryInfo := func() error {
+		res, err := r.client.Domains.GetList(&namecheap.DomainsGetListArgs{
+			SearchTerm: &domain,
+		})
+		if err != nil {
+			return fmt.Errorf("domain [%s] doesn't exist: %v", domain, err)
+		}
+
+		domainExpiryDate = (*res.Domains)[0].Expires.Time
+
+		return nil
+	}
+
+	reconnectBackoff := backoff.NewExponentialBackOff()
+	reconnectBackoff.MaxElapsedTime = 30 * time.Second
+	_err := backoff.Retry(getDomainExpiryInfo, reconnectBackoff)
+
+	if _err != nil {
+		return time.Time{}, diagnosticErrorOf(err, "failed to fetch domain expiry for [%s] after retries", domain)
+	}
+
+	return domainExpiryDate, nil
+}
+
+// Function to calculate the remaining active days of domain
+func calcDomainRemainingDays(expiryDate time.Time) int64 {
+	todayDate := time.Now()
+
+	return int64(expiryDate.Sub(todayDate).Hours() / 24)
+}
+
+// Function to determine when the domain requires renewal action
+func isDomainRequiredRenew(minDaysremaining int64, domainExpiry string) (bool, error) {
+	domainExpiryDate, err := time.Parse("2006-01-02T15:04:05Z", domainExpiry)
+	if err != nil {
+		return false, err
+	}
+
+	domainRemainingDays := calcDomainRemainingDays(domainExpiryDate)
+
+	return (domainRemainingDays <= minDaysremaining), err
 }
 
 func log(ctx context.Context, format string, a ...any) {
